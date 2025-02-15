@@ -46,3 +46,5 @@ jobs:
       with:
         name: openwrt-${{ env.BUILD_DATE }}
         path: openwrt/bin/targets/x86/64/*.img.gz
+        compression-level: 0  # 禁用压缩（固件已压缩）
+        overwrite: true
