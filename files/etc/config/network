@@ -1,0 +1,2 @@
+option ipaddr '${{ env.ADMIN_IP }}'  # 指定管理地址
+option gateway '192.168.6.1'       # 设置网关
