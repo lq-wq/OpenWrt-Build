@@ -8,35 +8,40 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    timeout-minutes: 120
+    timeout-minutes: 150
+    env:
+      OPENWRT_DIR: ${{ github.workspace }}/openwrt
 
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        path: main-repo  # 明确指定检出路径
+        path: src
 
-    - name: Fix permissions
+    - name: Fix file permissions
       run: |
-        chmod +x main-repo/scripts/*.sh
-        ls -al main-repo/scripts  # 验证权限
+        find src/scripts -type f -name "*.sh" -exec chmod +x {} \;
+        ls -l src/scripts/*.sh
 
-    - name: Setup coreutils
+    - name: Prepare environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential coreutils
+        sudo apt-get install -y build-essential libncurses5-dev \
+        zlib1g-dev gawk git gettext python3 python3-pip rsync
 
     - name: Clone OpenWrt
       run: |
-        git clone --depth=1 --branch=openwrt-24.10 https://github.com/openwrt/openwrt.git
-        chmod +x openwrt/scripts/*.sh  # 确保官方脚本可执行
+        git clone --depth=1 --branch=openwrt-24.10 https://github.com/openwrt/openwrt.git ${{ env.OPENWRT_DIR }}
+        cd ${{ env.OPENWRT_DIR }}
+        chmod +x scripts/feeds scripts/env scripts/*.pl
 
-    - name: Apply config
-      working-directory: openwrt  # 明确工作目录
+    - name: Apply custom configuration
+      working-directory: ${{ env.OPENWRT_DIR }}
       run: |
-        ../main-repo/scripts/apply_custom.sh
+        ../../src/scripts/apply_custom.sh
+        make defconfig
 
     - name: Build system
-      working-directory: openwrt
+      working-directory: ${{ env.OPENWRT_DIR }}
       run: |
         make -j2 V=s 2>&1 | tee build.log
