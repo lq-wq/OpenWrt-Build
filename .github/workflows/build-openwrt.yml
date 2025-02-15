@@ -1,4 +1,4 @@
-name: Build Custom OpenWrt
+name: Build OpenWrt with Debug
 
 on:
   push:
@@ -17,11 +17,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: System cleanup
+      run: |
+        sudo rm -f /var/lib/dpkg/lock*
+        sudo dpkg --configure -a
+        docker system prune -f
+
     - name: Prepare workspace
       run: |
-        # 创建必要目录
         mkdir -p files/etc/config artifacts
-        # 生成默认网络配置
+        # 生成最小化网络配置
         cat > files/etc/config/network <<EOF
         config interface 'loopback'
             option ifname 'lo'
@@ -29,74 +34,31 @@ jobs:
             option ipaddr '127.0.0.1'
             option netmask '255.0.0.0'
 
-        config globals 'globals'
-            option ula_prefix 'fd00:ab:cd::/48'
-
         config interface 'lan'
-            option type 'bridge'
             option ifname 'eth0'
             option proto 'static'
-            option netmask '255.255.255.0'
-            option ip6assign '60'
             option ipaddr '${{ env.ADMIN_IP }}'
-            option gateway '192.168.6.1'
-            option dns '8.8.8.8 8.8.4.4'
+            option netmask '255.255.255.0'
         EOF
 
-        # 生成系统配置
-        cat > files/etc/config/system <<EOF
-        config system
-            option hostname 'OpenWrt-CI'
-            option timezone 'UTC'
-            option zonename 'Asia/Shanghai'
-
-        config timeserver 'ntp'
-            list server '0.pool.ntp.org'
-            list server '1.pool.ntp.org'
-            list server '2.pool.ntp.org'
-        EOF
-
-    - name: Expand storage
-      run: |
-        # 扩展逻辑卷空间
-        sudo apt-get update && sudo apt-get install -y lvm2
-        sudo pvresize /dev/sda3
-        sudo lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
-        sudo resize2fs /dev/ubuntu-vg/ubuntu-lv
-        df -h
-
-    - name: Build image
+    - name: Build image (debug)
       run: |
         docker run --rm \
+          -e FORCE_UNSAFE_CONFIGURE=1 \
           -v $PWD/artifacts:/home/builder/imagebuilder/bin \
           -v $PWD/files:/home/builder/custom_files \
           ${{ env.DOCKER_IMAGE }} \
-          make image \
-          PROFILE="generic" \
-          KERNEL_VERSION="${{ env.KERNEL_VERSION }}" \
-          PACKAGES="luci luci-ssl-openssl luci-app-upnp luci-theme-material" \
-          FILES="/home/builder/custom_files" \
-          DISABLED_SERVICES="dnsmasq odhcpd"
+          bash -c "make image V=s \
+            PROFILE='generic' \
+            KERNEL_PATCHVER='${{ env.KERNEL_VERSION }}' \
+            PACKAGES='luci luci-ssl-openssl luci-compat' \
+            FILES='/home/builder/custom_files' || { cat build.log; exit 1; }"
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+    - name: Upload logs
+      if: failure()
+      uses: actions/upload-artifact@v3
       with:
-        name: openwrt-images
-        path: artifacts/targets/x86/64/*.img.gz
-        retention-days: 7
-
-    # 可选：自动发布到 Releases
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        files: artifacts/targets/x86/64/*.img.gz
-        body: |
-          Custom OpenWrt Build Features:
-          - Admin IP: ${{ env.ADMIN_IP }}
-          - Kernel: ${{ env.KERNEL_VERSION }}
-          - Preinstalled Packages:
-            • Luci Web Interface
-            • SSL Support
-            • UPnP Service
-            • Material Theme
+        name: build-logs
+        path: |
+          artifacts/build.log
+          artifacts/feeds.log
