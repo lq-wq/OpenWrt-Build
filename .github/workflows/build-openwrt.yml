@@ -1,50 +1,102 @@
-name: OpenWrt Build
+name: Build Custom OpenWrt
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
-  schedule:
-    - cron: '0 0 * * 0'
+
+env:
+  DOCKER_IMAGE: openwrt/imagebuilder:x86-64-openwrt-24.10
+  ADMIN_IP: 192.168.6.1
+  KERNEL_VERSION: 6.6
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    container:
-      image: 
-        docker run --rm -it \
-        -v ./bin:/builder/bin \
-        -v ./files:/builder/files \
-        -v ./build.sh:/builder/build.sh \
-        openwrt/imagebuilder:x86-64-openwrt-24.10 /builder/build.sh
-
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup environment
+    - name: Prepare workspace
       run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential libncurses5-dev zlib1g-dev gawk git
+        # 创建必要目录
+        mkdir -p files/etc/config artifacts
+        # 生成默认网络配置
+        cat > files/etc/config/network <<EOF
+        config interface 'loopback'
+            option ifname 'lo'
+            option proto 'static'
+            option ipaddr '127.0.0.1'
+            option netmask '255.0.0.0'
 
-    - name: Apply custom config
+        config globals 'globals'
+            option ula_prefix 'fd00:ab:cd::/48'
+
+        config interface 'lan'
+            option type 'bridge'
+            option ifname 'eth0'
+            option proto 'static'
+            option netmask '255.255.255.0'
+            option ip6assign '60'
+            option ipaddr '${{ env.ADMIN_IP }}'
+            option gateway '192.168.6.1'
+            option dns '8.8.8.8 8.8.4.4'
+        EOF
+
+        # 生成系统配置
+        cat > files/etc/config/system <<EOF
+        config system
+            option hostname 'OpenWrt-CI'
+            option timezone 'UTC'
+            option zonename 'Asia/Shanghai'
+
+        config timeserver 'ntp'
+            list server '0.pool.ntp.org'
+            list server '1.pool.ntp.org'
+            list server '2.pool.ntp.org'
+        EOF
+
+    - name: Expand storage
       run: |
-        chmod +x scripts/apply_custom.sh
-        ./scripts/apply_custom.sh
+        # 扩展逻辑卷空间
+        sudo apt-get update && sudo apt-get install -y lvm2
+        sudo pvresize /dev/sda3
+        sudo lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+        sudo resize2fs /dev/ubuntu-vg/ubuntu-lv
+        df -h
 
-    - name: Network optimize
+    - name: Build image
       run: |
-        chmod +x scripts/optimize.sh
-        ./scripts/optimize.sh
+        docker run --rm \
+          -v $PWD/artifacts:/home/builder/imagebuilder/bin \
+          -v $PWD/files:/home/builder/custom_files \
+          ${{ env.DOCKER_IMAGE }} \
+          make image \
+          PROFILE="generic" \
+          KERNEL_VERSION="${{ env.KERNEL_VERSION }}" \
+          PACKAGES="luci luci-ssl-openssl luci-app-upnp luci-theme-material" \
+          FILES="/home/builder/custom_files" \
+          DISABLED_SERVICES="dnsmasq odhcpd"
 
-    - name: Build OpenWrt
-      run: |
-        cd openwrt
-        make -j$(nproc) V=s
-        echo "BUILD_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
-
-    - name: Upload artifact
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: openwrt-${{ env.BUILD_DATE }}
-        path: openwrt/bin/targets/x86/64/*.img.gz
-        compression-level: 0  # 禁用压缩（固件已压缩）
-        overwrite: true
+        name: openwrt-images
+        path: artifacts/targets/x86/64/*.img.gz
+        retention-days: 7
+
+    # 可选：自动发布到 Releases
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: artifacts/targets/x86/64/*.img.gz
+        body: |
+          Custom OpenWrt Build Features:
+          - Admin IP: ${{ env.ADMIN_IP }}
+          - Kernel: ${{ env.KERNEL_VERSION }}
+          - Preinstalled Packages:
+            • Luci Web Interface
+            • SSL Support
+            • UPnP Service
+            • Material Theme
