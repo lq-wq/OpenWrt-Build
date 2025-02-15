@@ -1,4 +1,4 @@
-name: Build OpenWrt with Debug
+name: Build OpenWrt with v4 Artifacts
 
 on:
   push:
@@ -41,7 +41,7 @@ jobs:
             option netmask '255.255.255.0'
         EOF
 
-    - name: Build image (debug)
+    - name: Build image
       run: |
         docker run --rm \
           -e FORCE_UNSAFE_CONFIGURE=1 \
@@ -54,11 +54,33 @@ jobs:
             PACKAGES='luci luci-ssl-openssl luci-compat' \
             FILES='/home/builder/custom_files' || { cat build.log; exit 1; }"
 
-    - name: Upload logs
-      if: failure()
-      uses: actions/upload-artifact@v3
+    - name: Upload firmware
+      uses: actions/upload-artifact@v4
+      with:
+        name: openwrt-firmware
+        path: |
+          artifacts/targets/x86/64/*.img.gz
+          artifacts/targets/x86/64/sha256sums
+        retention-days: 7
+
+    - name: Upload build logs
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v4
       with:
         name: build-logs
         path: |
           artifacts/build.log
           artifacts/feeds.log
+        retention-days: 3
+
+    # 可选：自动发布到 Releases
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: artifacts/targets/x86/64/*.img.gz
+        body: |
+          ### Build Information
+          - Admin IP: ${{ env.ADMIN_IP }}
+          - Kernel Version: ${{ env.KERNEL_VERSION }}
+          - Build Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
