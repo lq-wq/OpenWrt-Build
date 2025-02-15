@@ -1,48 +1,39 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# 严格模式设置
-set -eo pipefail
-shopt -s inherit_errexit
+# Clone官方仓库
+git clone --depth=1 --branch=openwrt-24.10 https://github.com/openwrt/openwrt.git
+cd openwrt
 
-# 环境验证
-if [[ ! -f feeds.conf.default ]]; then
-  echo "❌ 错误：必须在OpenWrt根目录执行本脚本！"
-  exit 1
-fi
+# 添加软件源
+echo 'src-git custom https://github.com/cdny123/openwrt-package1' >> feeds.conf.default
 
-# 强制修复权限
-find ./scripts -type f \( -name '*.sh' -o -name '*.pl' \) -exec chmod +x {} \;
-
-# 核心配置
-cat << EOF > .config
-CONFIG_TARGET_x86=y
-CONFIG_TARGET_x86_64=y
-CONFIG_TARGET_ROOTFS_EXT4FS=y
-CONFIG_TARGET_ROOTFS_PARTSIZE=2048
-CONFIG_PACKAGE_luci=y
-CONFIG_PACKAGE_luci-compat=y
-EOF
-
-# 安全克隆函数
-safe_clone() {
-  repo_url=$1
-  target_dir=$2
-  if [[ ! -d "package/${target_dir}" ]]; then
-    git clone --depth=1 --single-branch "${repo_url}" "package/${target_dir}"
-  fi
-}
-
-# 克隆必要仓库
-safe_clone https://github.com/sirpdboy/luci-theme-argon.git luci-theme-argon
-safe_clone https://github.com/vernesong/OpenClash.git openclash
-
-# 更新软件源
-echo "src-git custom https://github.com/cdny123/openwrt-package1" >> feeds.conf.default
+# 更新feed
 ./scripts/feeds update -a
 ./scripts/feeds install -a
 
-# 最终验证
-if ! make defconfig; then
-  echo "❌ 配置验证失败，请检查错误日志！"
-  exit 1
-fi
+# 克隆第三方包
+git clone https://github.com/sirpdboy/luci-theme-argon.git package/luci-theme-argon
+git clone https://github.com/lq-wq/luci-app-quickstart.git package/luci-app-quickstart
+git clone https://github.com/morytyann/OpenWrt-mihomo.git package/luci-app-mihomo
+git clone https://github.com/sirpdboy/chatgpt-web.git package/luci-app-chatgpt
+git clone https://github.com/sirpdboy/luci-app-lucky.git package/lucky
+git clone https://github.com/xiaoqingfengATGH/luci-theme-infinityfreedom.git package/luci-theme-infinityfreedom
+git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-app-kucat
+git clone --depth 1 --branch master https://github.com/vernesong/OpenClash.git package/openclash
+
+# 配置内核
+sed -i 's/KERNEL_PATCHVER:=.*/KERNEL_PATCHVER:=6.6/' target/linux/x86/Makefile
+
+# 合并配置文件
+cat ../config/common.config > .config
+cat ../config/software.config >> .config
+
+# 系统参数
+echo "CONFIG_TARGET_ROOTFS_PARTSIZE=4096" >> .config
+echo "CONFIG_TARGET_KERNEL_PARTSIZE=128" >> .config
+
+# 生成签名
+BUILD_DATE=$(date +%Y%m%d)
+sed -i "s/OpenWrt /OpenWrt-04543473-$BUILD_DATE /" package/base-files/files/etc/openwrt_release
+
+make defconfig
