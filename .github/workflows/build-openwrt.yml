@@ -1,0 +1,43 @@
+name: OpenWrt Build
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container:
+      image: openwrtorg/sdk:linux-x86_64-24.10
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libncurses5-dev zlib1g-dev gawk git
+
+    - name: Apply custom config
+      run: |
+        chmod +x scripts/apply_custom.sh
+        ./scripts/apply_custom.sh
+
+    - name: Network optimize
+      run: |
+        chmod +x scripts/optimize.sh
+        ./scripts/optimize.sh
+
+    - name: Build OpenWrt
+      run: |
+        cd openwrt
+        make -j$(nproc) V=s
+        echo "BUILD_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: openwrt-${{ env.BUILD_DATE }}
+        path: openwrt/bin/targets/x86/64/*.img.gz
