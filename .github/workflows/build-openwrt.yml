@@ -9,48 +9,34 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
-    env:
-      CCACHE_DIR: ${{ github.workspace }}/ccache_dir
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        path: main-repo  # 明确指定检出路径
 
-    - name: Setup environment
+    - name: Fix permissions
       run: |
-        sudo apt-get clean
-        sudo rm -rf /usr/local/lib/android /opt/ghc /usr/local/share/boost
-        sudo apt-get autoremove -y
-        df -h
+        chmod +x main-repo/scripts/*.sh
+        ls -al main-repo/scripts  # 验证权限
+
+    - name: Setup coreutils
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential coreutils
 
     - name: Clone OpenWrt
       run: |
-        git clone --depth=1 --filter=blob:none --branch=openwrt-24.10 https://github.com/openwrt/openwrt.git
-
-    - name: Cache dependencies
-      uses: actions/cache@v3
-      with:
-        path: |
-          openwrt/dl
-          ${{ env.CCACHE_DIR }}
-        key: ${{ runner.os }}-openwrt-${{ hashFiles('config/*.config') }}-${{ github.run_number }}
+        git clone --depth=1 --branch=openwrt-24.10 https://github.com/openwrt/openwrt.git
+        chmod +x openwrt/scripts/*.sh  # 确保官方脚本可执行
 
     - name: Apply config
+      working-directory: openwrt  # 明确工作目录
       run: |
-        cd openwrt
-        ../scripts/apply_custom.sh
-        make defconfig
+        ../main-repo/scripts/apply_custom.sh
 
-    - name: Build with space optimization
+    - name: Build system
+      working-directory: openwrt
       run: |
-        cd openwrt
-        make -j2 2>&1 | tee build.log | grep -E 'warn|error'
-        rm -rf build_dir/target-*/linux-{kernel}/tmp
-        find . -name "*.o" -delete
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: openwrt-minimal
-        path: openwrt/bin/targets/x86/64/openwrt-*.img.gz
-        compression-level: 0
+        make -j2 V=s 2>&1 | tee build.log
