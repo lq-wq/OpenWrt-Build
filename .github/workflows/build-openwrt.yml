@@ -2,14 +2,13 @@ name: OpenWrt Build
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 0 * * 0'
+  push:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-22.04
-    container:
-      image: openwrt/sdk:generic-x86_64-23.05  # 修正后的官方镜像
+    timeout-minutes: 120
 
     steps:
     - name: Checkout code
@@ -18,28 +17,33 @@ jobs:
     - name: Setup environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential libncurses5-dev zlib1g-dev gawk git
+        sudo apt-get install -y build-essential libncurses5-dev \
+        zlib1g-dev gawk git gettext libssl-dev python3 python3-distutils
+
+    - name: Clone OpenWrt 24.10
+      run: |
+        git clone --depth=1 --branch=openwrt-24.10 https://github.com/openwrt/openwrt.git
+        cd openwrt
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
 
     - name: Apply custom config
       run: |
-        chmod +x scripts/apply_custom.sh
-        ./scripts/apply_custom.sh
-
-    - name: Network optimize
-      run: |
-        chmod +x scripts/optimize.sh
-        ./scripts/optimize.sh
+        cd openwrt
+        cp ../config/common.config .config
+        cat ../config/software.config >> .config
+        chmod +x ../scripts/apply_custom.sh
+        ../scripts/apply_custom.sh
 
     - name: Build OpenWrt
       run: |
         cd openwrt
-        make -j$(nproc) V=s
-        echo "BUILD_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+        make -j$(($(nproc)+1)) V=s
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: openwrt-${{ env.BUILD_DATE }}
+        name: openwrt-24.10-${{ github.run_number }}
         path: openwrt/bin/targets/x86/64/*.img.gz
         compression-level: 0
         overwrite: true
