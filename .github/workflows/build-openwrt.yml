@@ -42,7 +42,7 @@ jobs:
         echo "BUILD_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: openwrt-${{ env.BUILD_DATE }}
         path: openwrt/bin/targets/x86/64/*.img.gz
