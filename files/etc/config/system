@@ -1,0 +1,2 @@
+KERNEL_VERSION: 6.6  # 在环境变量中定义
+make image KERNEL_VERSION="${{ env.KERNEL_VERSION }}"  # 传递给编译命令
