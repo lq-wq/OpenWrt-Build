@@ -1,4 +1,4 @@
-name: OpenWrt CI Debug
+name: OpenWrt CI Final
 
 on:
   push:
@@ -7,10 +7,9 @@ on:
 
 env:
   DOCKER_IMAGE: openwrt/imagebuilder:x86-64-openwrt-24.10
-  ADMIN_IP: 192.168.6.1
-  KERNEL_VERSION: 6.6
-  BUILD_ROOT: ${{ github.workspace }}/build
-  DOCKER_WORKDIR: /home/builder/imagebuilder
+  BUILD_ROOT: ${{ github.workspace }}/openwrt_build
+  DOCKER_OUTPUT: /home/builder/imagebuilder/bin
+  KERNEL_PATCHVER: 6.6
 
 jobs:
   build:
@@ -19,78 +18,69 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Initialize workspace
+    - name: Initialize environment
       run: |
-        # 清理旧构建产物
-        rm -rf ${{ env.BUILD_ROOT }}
-        mkdir -p ${{ env.BUILD_ROOT }}/{logs,config}
+        # 清理并重建目录结构
+        sudo rm -rf ${{ env.BUILD_ROOT }}
+        mkdir -p ${{ env.BUILD_ROOT }}/{logs,config,files}
         
-        # 生成基础配置
+        # 生成最小化网络配置
         cat > ${{ env.BUILD_ROOT }}/config/network <<EOF
-        config interface 'loopback'
-            option ifname 'lo'
-            option proto 'static'
-            option ipaddr '127.0.0.1'
-            option netmask '255.0.0.0'
-
         config interface 'lan'
-            option ifname 'eth0'
             option proto 'static'
-            option ipaddr '${{ env.ADMIN_IP }}'
+            option ipaddr '192.168.6.1'
             option netmask '255.255.255.0'
         EOF
 
-    - name: Verify directory structure
-      run: |
-        tree -L 3 ${{ env.BUILD_ROOT }}
-        ls -l ${{ env.BUILD_ROOT }}/config
+        # 设置目录权限
+        sudo chmod -R 777 ${{ env.BUILD_ROOT }}
 
-    - name: Build with debug
+    - name: Verify kernel compatibility
+      run: |
+        docker run --rm ${{ env.DOCKER_IMAGE }} \
+          bash -c "ls $PWD/target/linux/x86/ | grep '^config-${{ env.KERNEL_PATCHVER }}\.'"
+
+    - name: Run safe build
+      id: build
       run: |
         docker run --rm \
           -e FORCE_UNSAFE_CONFIGURE=1 \
-          -v ${{ env.BUILD_ROOT }}:${{ env.DOCKER_WORKDIR }}/build \
-          -v ${{ env.BUILD_ROOT }}/config:/custom_files \
-          -w ${{ env.DOCKER_WORKDIR }} \
+          -v ${{ env.BUILD_ROOT }}/logs:${{ env.DOCKER_OUTPUT }}/logs \
+          -v ${{ env.BUILD_ROOT }}/config:/custom_config \
           ${{ env.DOCKER_IMAGE }} \
           bash -exc " \
-            mkdir -p build/logs && \
-            { make image V=sc \
+            export LOG_FILE='${{ env.DOCKER_OUTPUT }}/logs/build.log'; \
+            mkdir -p $(dirname \$LOG_FILE); \
+            { \
+              make image V=sc \
                 PROFILE='generic' \
-                KERNEL_PATCHVER='${{ env.KERNEL_VERSION }}' \
-                PACKAGES='base-files luci luci-compat' \
-                FILES='/custom_files' \
-                2>&1 | tee build/logs/build.log; \
-            } || { echo '##[error] Build failed'; exit 2; } \
+                KERNEL_PATCHVER='${{ env.KERNEL_PATCHVER }}' \
+                PACKAGES='base-files' \
+                FILES='/custom_config' \
+                BIN_DIR='${{ env.DOCKER_OUTPUT }}' \
+                2>&1 | tee \$LOG_FILE; \
+              echo \$? > ${{ env.BUILD_ROOT }}/exitcode; \
+            } || true; \
+            exit \$(cat ${{ env.BUILD_ROOT }}/exitcode) \
           "
 
-    - name: Post-build diagnostics
+    - name: Post-mortem analysis
       if: always()
       run: |
         echo "=== Build artifacts structure ==="
-        tree -L 3 ${{ env.BUILD_ROOT }}
-        
-        echo "=== Build logs existence check ==="
-        ls -l ${{ env.BUILD_ROOT }}/logs || true
-        
-        echo "=== Last 100 lines of build log ==="
-        tail -n 100 ${{ env.BUILD_ROOT }}/logs/build.log || true
+        tree -L 3 ${{ env.BUILD_ROOT }} || true
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: openwrt-build
-        path: |
-          ${{ env.BUILD_ROOT }}/targets/x86/64/*.img.gz
-          ${{ env.BUILD_ROOT }}/sha256sums
-        retention-days: 7
+        echo "=== Critical error patterns ==="
+        grep -iE 'error|fail|undefined' ${{ env.BUILD_ROOT }}/logs/build.log | head -n 50 || true
 
-    - name: Upload debug logs
-      if: failure()
+        echo "=== Kernel config verification ==="
+        docker run --rm ${{ env.DOCKER_IMAGE }} \
+          grep CONFIG_KERNEL_ ${{ env.DOCKER_OUTPUT }}/.config | grep ${{ env.KERNEL_PATCHVER }}
+
+    - name: Upload debug bundle
       uses: actions/upload-artifact@v4
+      if: always()
       with:
-        name: debug-info
-        path: |
-          ${{ env.BUILD_ROOT }}/logs/build.log
-          ${{ env.BUILD_ROOT }}/config/network
+        name: debug-bundle
+        path: ${{ env.BUILD_ROOT }}
         retention-days: 3
