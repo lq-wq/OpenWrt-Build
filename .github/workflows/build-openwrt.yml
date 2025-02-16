@@ -1,4 +1,4 @@
-name: Robust OpenWrt Build
+name: OpenWrt CI Debug
 
 on:
   push:
@@ -9,7 +9,8 @@ env:
   DOCKER_IMAGE: openwrt/imagebuilder:x86-64-openwrt-24.10
   ADMIN_IP: 192.168.6.1
   KERNEL_VERSION: 6.6
-  BUILD_DIR: ${{ github.workspace }}/artifacts
+  BUILD_ROOT: ${{ github.workspace }}/build
+  DOCKER_WORKDIR: /home/builder/imagebuilder
 
 jobs:
   build:
@@ -20,11 +21,12 @@ jobs:
 
     - name: Initialize workspace
       run: |
-        mkdir -p ${{ env.BUILD_DIR }}/logs
-        # 创建必要目录结构
-        mkdir -p files/etc/config
-        # 生成最小网络配置
-        cat > files/etc/config/network <<EOF
+        # 清理旧构建产物
+        rm -rf ${{ env.BUILD_ROOT }}
+        mkdir -p ${{ env.BUILD_ROOT }}/{logs,config}
+        
+        # 生成基础配置
+        cat > ${{ env.BUILD_ROOT }}/config/network <<EOF
         config interface 'loopback'
             option ifname 'lo'
             option proto 'static'
@@ -38,53 +40,57 @@ jobs:
             option netmask '255.255.255.0'
         EOF
 
+    - name: Verify directory structure
+      run: |
+        tree -L 3 ${{ env.BUILD_ROOT }}
+        ls -l ${{ env.BUILD_ROOT }}/config
+
     - name: Build with debug
       run: |
         docker run --rm \
           -e FORCE_UNSAFE_CONFIGURE=1 \
-          -v ${{ env.BUILD_DIR }}:/home/builder/imagebuilder/bin \
-          -v ${{ github.workspace }}/files:/home/builder/custom_files \
+          -v ${{ env.BUILD_ROOT }}:${{ env.DOCKER_WORKDIR }}/build \
+          -v ${{ env.BUILD_ROOT }}/config:/custom_files \
+          -w ${{ env.DOCKER_WORKDIR }} \
           ${{ env.DOCKER_IMAGE }} \
-          bash -c "set -o pipefail; \
-            make image V=s \
-            PROFILE='generic' \
-            KERNEL_PATCHVER='${{ env.KERNEL_VERSION }}' \
-            PACKAGES='luci luci-ssl-openssl luci-compat' \
-            FILES='/home/builder/custom_files' \
-            2>&1 | tee /home/builder/imagebuilder/bin/logs/build.log; \
-            exit \${PIPESTATUS[0]}"
+          bash -exc " \
+            mkdir -p build/logs && \
+            { make image V=sc \
+                PROFILE='generic' \
+                KERNEL_PATCHVER='${{ env.KERNEL_VERSION }}' \
+                PACKAGES='base-files luci luci-compat' \
+                FILES='/custom_files' \
+                2>&1 | tee build/logs/build.log; \
+            } || { echo '##[error] Build failed'; exit 2; } \
+          "
 
-    - name: Collect artifacts
-      if: success()
+    - name: Post-build diagnostics
+      if: always()
       run: |
-        echo "Generated files:"
-        find ${{ env.BUILD_DIR }} -type f
+        echo "=== Build artifacts structure ==="
+        tree -L 3 ${{ env.BUILD_ROOT }}
+        
+        echo "=== Build logs existence check ==="
+        ls -l ${{ env.BUILD_ROOT }}/logs || true
+        
+        echo "=== Last 100 lines of build log ==="
+        tail -n 100 ${{ env.BUILD_ROOT }}/logs/build.log || true
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: firmware
+        name: openwrt-build
         path: |
-          ${{ env.BUILD_DIR }}/targets/x86/64/*.img.gz
-          ${{ env.BUILD_DIR }}/sha256sums
+          ${{ env.BUILD_ROOT }}/targets/x86/64/*.img.gz
+          ${{ env.BUILD_ROOT }}/sha256sums
         retention-days: 7
 
-    - name: Capture build logs
-      if: always()
+    - name: Upload debug logs
+      if: failure()
       uses: actions/upload-artifact@v4
       with:
-        name: debug-logs
-        path: ${{ env.BUILD_DIR }}/logs/*
+        name: debug-info
+        path: |
+          ${{ env.BUILD_ROOT }}/logs/build.log
+          ${{ env.BUILD_ROOT }}/config/network
         retention-days: 3
-
-    - name: Failover diagnostics
-      if: failure()
-      run: |
-        echo "=== Last 50 lines of build log ==="
-        tail -n 50 ${{ env.BUILD_DIR }}/logs/build.log || true
-        
-        echo "=== Disk space check ==="
-        df -h
-        
-        echo "=== Docker image info ==="
-        docker inspect ${{ env.DOCKER_IMAGE }}
