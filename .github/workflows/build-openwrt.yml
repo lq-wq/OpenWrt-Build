@@ -1,86 +1,78 @@
-name: OpenWrt CI Final
+name: OpenWrt CI Ultimate
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
-  workflow_dispatch:
 
 env:
   DOCKER_IMAGE: openwrt/imagebuilder:x86-64-openwrt-24.10
-  BUILD_ROOT: ${{ github.workspace }}/openwrt_build
-  DOCKER_OUTPUT: /home/builder/imagebuilder/bin
-  KERNEL_PATCHVER: 6.6
+  BUILD_ROOT: ${{ github.workspace }}/_build
+  KERNEL_TARGET: 6.6
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Initialize environment
+    - name: Atomic workspace initialization
       run: |
-        # 清理并重建目录结构
         sudo rm -rf ${{ env.BUILD_ROOT }}
-        mkdir -p ${{ env.BUILD_ROOT }}/{logs,config,files}
-        
-        # 生成最小化网络配置
-        cat > ${{ env.BUILD_ROOT }}/config/network <<EOF
-        config interface 'lan'
-            option proto 'static'
-            option ipaddr '192.168.6.1'
-            option netmask '255.255.255.0'
-        EOF
+        mkdir -p ${{ env.BUILD_ROOT }}/logs/{build,package}
+        sudo chown -R runner:docker ${{ env.BUILD_ROOT }}
+        docker system prune -af
 
-        # 设置目录权限
-        sudo chmod -R 777 ${{ env.BUILD_ROOT }}
+    - name: Kernel version validation
+      id: kernel_check
+      run: |
+        echo "KERNEL_MANIFEST=$(docker run --rm ${{ env.DOCKER_IMAGE }} \
+          find target/linux/x86/ -name 'config-*' -printf '%f\n')" >> $GITHUB_OUTPUT
+        if ! grep -q "config-${{ env.KERNEL_TARGET }}" <<< "$KERNEL_MANIFEST"; then
+          echo "::error::Kernel ${{ env.KERNEL_TARGET }} not found in image!"
+          exit 1
+        fi
 
-    - name: Verify kernel compatibility
+    - name: Build environment probe
       run: |
         docker run --rm ${{ env.DOCKER_IMAGE }} \
-          bash -c "ls $PWD/target/linux/x86/ | grep '^config-${{ env.KERNEL_PATCHVER }}\.'"
+          bash -c "ls -l .config && make -n image" > ${{ env.BUILD_ROOT }}/logs/env-probe.log
 
-    - name: Run safe build
-      id: build
+    - name: Atomic build process
       run: |
+        set -eo pipefail
         docker run --rm \
           -e FORCE_UNSAFE_CONFIGURE=1 \
-          -v ${{ env.BUILD_ROOT }}/logs:${{ env.DOCKER_OUTPUT }}/logs \
-          -v ${{ env.BUILD_ROOT }}/config:/custom_config \
+          -v ${{ env.BUILD_ROOT }}/logs:/build-logs \
+          -v ${{ env.BUILD_ROOT }}/config:/config \
           ${{ env.DOCKER_IMAGE }} \
           bash -exc " \
-            export LOG_FILE='${{ env.DOCKER_OUTPUT }}/logs/build.log'; \
-            mkdir -p $(dirname \$LOG_FILE); \
-            { \
-              make image V=sc \
-                PROFILE='generic' \
-                KERNEL_PATCHVER='${{ env.KERNEL_PATCHVER }}' \
-                PACKAGES='base-files' \
-                FILES='/custom_config' \
-                BIN_DIR='${{ env.DOCKER_OUTPUT }}' \
-                2>&1 | tee \$LOG_FILE; \
-              echo \$? > ${{ env.BUILD_ROOT }}/exitcode; \
-            } || true; \
-            exit \$(cat ${{ env.BUILD_ROOT }}/exitcode) \
-          "
+            exec &> >(tee /build-logs/full-build.log); \
+            cp -v /config/network ./files/etc/config/network; \
+            make image V=sc \
+              PROFILE=generic \
+              KERNEL_PATCHVER='${{ env.KERNEL_TARGET }}' \
+              PACKAGES='base-files' \
+              FILES='./files' \
+              BIN_DIR='./bin'; \
+            echo 'BUILD_SUCCESS' > /build-logs/status.mark"
 
-    - name: Post-mortem analysis
+    - name: Post-build forensic analysis
       if: always()
       run: |
-        echo "=== Build artifacts structure ==="
+        echo "=== Build Artifact Tree ==="
         tree -L 3 ${{ env.BUILD_ROOT }} || true
 
-        echo "=== Critical error patterns ==="
-        grep -iE 'error|fail|undefined' ${{ env.BUILD_ROOT }}/logs/build.log | head -n 50 || true
+        echo "=== Critical Error Patterns ==="
+        grep -Ei 'error:|fail:|undefined reference' ${{ env.BUILD_ROOT }}/logs/full-build.log | \
+          awk '!seen[$0]++' | head -n 100 || true
 
-        echo "=== Kernel config verification ==="
+        echo "=== Kernel Config Validation ==="
         docker run --rm ${{ env.DOCKER_IMAGE }} \
-          grep CONFIG_KERNEL_ ${{ env.DOCKER_OUTPUT }}/.config | grep ${{ env.KERNEL_PATCHVER }}
+          diff -u target/linux/x86/config-${{ env.KERNEL_TARGET }} .config || true
 
-    - name: Upload debug bundle
+    - name: Upload forensic data
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: debug-bundle
+        name: forensic-bundle
         path: ${{ env.BUILD_ROOT }}
-        retention-days: 3
+        retention-days: 7
