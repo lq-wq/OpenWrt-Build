@@ -1,78 +1,35 @@
-name: OpenWrt CI Ultimate
-
-on:
-  workflow_dispatch:
-  push:
-    branches: [ main ]
+name: OpenWrt Build Fixed
 
 env:
   DOCKER_IMAGE: openwrt/imagebuilder:x86-64-openwrt-24.10
-  BUILD_ROOT: ${{ github.workspace }}/_build
-  KERNEL_TARGET: 6.6
+  BUILD_DIR: ${{ github.workspace }}/output
+  KERNEL_TARGET: 6.1  # 根据实际可用内核调整
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Atomic workspace initialization
+    - name: Check kernel compatibility
       run: |
-        sudo rm -rf ${{ env.BUILD_ROOT }}
-        mkdir -p ${{ env.BUILD_ROOT }}/logs/{build,package}
-        sudo chown -R runner:docker ${{ env.BUILD_ROOT }}
-        docker system prune -af
-
-    - name: Kernel version validation
-      id: kernel_check
-      run: |
-        echo "KERNEL_MANIFEST=$(docker run --rm ${{ env.DOCKER_IMAGE }} \
-          find target/linux/x86/ -name 'config-*' -printf '%f\n')" >> $GITHUB_OUTPUT
-        if ! grep -q "config-${{ env.KERNEL_TARGET }}" <<< "$KERNEL_MANIFEST"; then
-          echo "::error::Kernel ${{ env.KERNEL_TARGET }} not found in image!"
+        docker run --rm ${{ env.DOCKER_IMAGE }} \
+          ls target/linux/x86/config-* > kernels.txt
+        if ! grep -q "${{ env.KERNEL_TARGET }}" kernels.txt; then
+          echo "::error::Kernel ${{ env.KERNEL_TARGET }} not available!"
           exit 1
         fi
 
-    - name: Build environment probe
+    - name: Build with verified kernel
       run: |
-        docker run --rm ${{ env.DOCKER_IMAGE }} \
-          bash -c "ls -l .config && make -n image" > ${{ env.BUILD_ROOT }}/logs/env-probe.log
-
-    - name: Atomic build process
-      run: |
-        set -eo pipefail
         docker run --rm \
-          -e FORCE_UNSAFE_CONFIGURE=1 \
-          -v ${{ env.BUILD_ROOT }}/logs:/build-logs \
-          -v ${{ env.BUILD_ROOT }}/config:/config \
+          -v ${{ env.BUILD_DIR }}:/imagebuilder/bin \
           ${{ env.DOCKER_IMAGE }} \
-          bash -exc " \
-            exec &> >(tee /build-logs/full-build.log); \
-            cp -v /config/network ./files/etc/config/network; \
-            make image V=sc \
-              PROFILE=generic \
-              KERNEL_PATCHVER='${{ env.KERNEL_TARGET }}' \
-              PACKAGES='base-files' \
-              FILES='./files' \
-              BIN_DIR='./bin'; \
-            echo 'BUILD_SUCCESS' > /build-logs/status.mark"
+          make image \
+          PROFILE="generic" \
+          KERNEL_PATCHVER="${{ env.KERNEL_TARGET }}" \
+          PACKAGES="base-files luci" \
+          BIN_DIR="/imagebuilder/bin"
 
-    - name: Post-build forensic analysis
-      if: always()
-      run: |
-        echo "=== Build Artifact Tree ==="
-        tree -L 3 ${{ env.BUILD_ROOT }} || true
-
-        echo "=== Critical Error Patterns ==="
-        grep -Ei 'error:|fail:|undefined reference' ${{ env.BUILD_ROOT }}/logs/full-build.log | \
-          awk '!seen[$0]++' | head -n 100 || true
-
-        echo "=== Kernel Config Validation ==="
-        docker run --rm ${{ env.DOCKER_IMAGE }} \
-          diff -u target/linux/x86/config-${{ env.KERNEL_TARGET }} .config || true
-
-    - name: Upload forensic data
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
-      if: always()
       with:
-        name: forensic-bundle
-        path: ${{ env.BUILD_ROOT }}
-        retention-days: 7
+        path: ${{ env.BUILD_DIR }}/targets/x86/64/*.img.gz
