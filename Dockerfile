@@ -1,6 +1,9 @@
 # 使用 OpenWrt ImageBuilder 作为基础镜像
 FROM openwrt/imagebuilder:x86-64-openwrt-24.10
 
+# 更新系统
+RUN opkg update
+
 # 安装 opkg
 RUN opkg update && opkg install opkg
 
@@ -10,9 +13,6 @@ ENV KERNEL_VERSION=6.6
 ENV HOSTNAME=openwrt-NIT
 ENV LAN_IP=192.168.6.1
 ENV ROOT_PASSWORD=""
-
-# 更新系统
-RUN opkg update
 
 # 安装 Argon 主题
 RUN opkg install luci-theme-argon
