@@ -1,9 +1,9 @@
 # 使用 OpenWrt ImageBuilder 作为基础镜像
-FROM openwrt/imagebuilder:x86-64-openwrt-24.10
+FROM openwrt/imagebuilder:x86-64-openwrt-24.10.0
 
 # 创建 /etc/opkg 目录并配置 distfeeds.conf
 RUN mkdir -p /etc/opkg && \
-    echo "src/gz base http://downloads.openwrt.org/releases/24.10-SNAPSHOT/packages/x86_64/base" | tee /etc/opkg/distfeeds.conf && \
+    echo "src/gz base http://downloads.openwrt.org/releases/24.10.0/packages/x86_64/base" | tee /etc/opkg/distfeeds.conf && \
     opkg update && opkg install opkg
 
 # 设置环境变量
