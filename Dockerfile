@@ -12,8 +12,11 @@ ENV ROOT_PASSWORD=""
 # 确保使用 root 用户
 USER root
 
-# 创建 /etc/config 目录
-RUN mkdir -p /etc/config
+# 设置工作目录
+WORKDIR /openwrt
+
+# 复制预配置的 .config 文件
+COPY .config /openwrt/.config
 
 # 手动创建 network 文件
 RUN echo "config interface 'loopback'" > /etc/config/network && \
