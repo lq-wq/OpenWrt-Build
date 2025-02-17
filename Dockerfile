@@ -15,23 +15,31 @@ USER root
 # 创建 /etc/config 目录
 RUN mkdir -p /etc/config
 
+# 手动创建 network 文件
+RUN echo "config interface 'loopback'" > /etc/config/network && \
+    echo "    option ifname 'lo'" >> /etc/config/network && \
+    echo "    option proto 'static'" >> /etc/config/network && \
+    echo "    option ipaddr '127.0.0.1'" >> /etc/config/network && \
+    echo "    option netmask '255.0.0.0'" >> /etc/config/network && \
+    echo "" >> /etc/config/network && \
+    echo "config globals 'globals'" >> /etc/config/network && \
+    echo "    option ula_prefix 'auto'" >> /etc/config/network && \
+    echo "" >> /etc/config/network && \
+    echo "config interface 'lan'" >> /etc/config/network && \
+    echo "    option type 'bridge'" >> /etc/config/network && \
+    echo "    option ifname 'eth0'" >> /etc/config/network && \
+    echo "    option proto 'static'" >> /etc/config/network && \
+    echo "    option ipaddr '192.168.1.1'" >> /etc/config/network && \
+    echo "    option netmask '255.255.255.0'" >> /etc/config/network && \
+    echo "    option ip6assign '60'" >> /etc/config/network
+
+# 修改后台地址
+RUN sed -i "s/192.168.1.1/$LAN_IP/g" /etc/config/network
+
 # 设置主机名和密码
 RUN echo "config system" > /etc/config/system
 RUN echo "    option hostname '$HOSTNAME'" >> /etc/config/system
 RUN echo "    option timezone 'UTC'" >> /etc/config/system
-RUN echo "    option ttylogin '0'" >> /etc/config/system
-RUN echo "    option log_size '64'" >> /etc/config/system
-RUN echo "    option urandom_seed '0'" >> /etc/config/system
-RUN echo "    option cronloglevel '5'" >> /etc/config/system
-RUN echo "    option zonename 'UTC'" >> /etc/config/system
-RUN echo "    option log_proto 'udp'" >> /etc/config/system
-RUN echo "    option log_ip '127.0.0.1'" >> /etc/config/system
-RUN echo "    option log_port '514'" >> /etc/config/system
-RUN echo "    option conloglevel '7'" >> /etc/config/system
-RUN echo "    option log_remote '0'" >> /etc/config/system
-
-# 修改后台地址
-RUN sed -i "s/192.168.1.1/$LAN_IP/g" /etc/config/network
 
 # 添加在线更新功能
 RUN opkg install luci-app-update
