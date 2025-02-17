@@ -1,5 +1,5 @@
 # 使用 OpenWrt ImageBuilder 作为基础镜像
-FROM openwrt/imagebuilder:x86-64-24.10
+FROM openwrt/imagebuilder:x86-64-openwrt-24.10
 
 # 切换到 root 用户
 USER root
