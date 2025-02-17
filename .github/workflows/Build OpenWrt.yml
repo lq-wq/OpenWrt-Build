@@ -40,18 +40,18 @@ jobs:
         DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
         DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-    - name: Check opkg command
-      run: |
-        if ! command -v opkg &> /dev/null; then
-          echo "opkg command not found"
-          exit 1
-        fi
-
     - name: Build Docker image
       run: |
         docker build -t openwrt-custom:latest .
         if [ $? -ne 0 ]; then
           echo "Docker build failed"
+          exit 1
+        fi
+
+    - name: Check opkg command
+      run: |
+        if ! command -v opkg &> /dev/null; then
+          echo "opkg command not found"
           exit 1
         fi
 
