@@ -10,7 +10,7 @@ ENV LAN_IP=192.168.6.1
 ENV ROOT_PASSWORD=""
 
 # 安装 Argon 主题
-RUN opkg install luci-theme-argon
+RUN opkg install luci-theme-kucat
 
 # 设置主机名和密码
 RUN echo "config system" > /etc/config/system
