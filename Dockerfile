@@ -86,9 +86,6 @@ RUN mkdir package/luci-app-openclash && \
     git pull --depth 1 origin master && \
     git branch --set-upstream-to=origin/master master
 
-# 检查 scripts 目录是否存在 download_clash.sh
-RUN ls -la package/luci-app-openclash/scripts/
-
 # 运行 download_clash.sh 脚本
 RUN cd package/luci-app-openclash && ./scripts/download_clash.sh
 
