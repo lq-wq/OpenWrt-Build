@@ -1,6 +1,9 @@
 # 使用 OpenWrt ImageBuilder 作为基础镜像
 FROM openwrt/imagebuilder:x86-64-openwrt-24.10
 
+# 安装 opkg
+RUN opkg update && opkg install opkg
+
 # 设置环境变量
 ENV OPENWRT_VERSION=24.10
 ENV KERNEL_VERSION=6.6
