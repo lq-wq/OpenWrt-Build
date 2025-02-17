@@ -9,9 +9,16 @@ ENV HOSTNAME=openwrt-NIT
 ENV LAN_IP=192.168.6.1
 ENV ROOT_PASSWORD=""
 
-# 安装 kucat 主题
+# 安装 opkg 和依赖项
+RUN ./scripts/feeds update -a && \
+    ./scripts/feeds install -a
+
+# 克隆主题仓库
 RUN git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-theme-kucat
-RUN opkg install luci-theme-kucat
+
+# 编译并安装主题
+RUN make defconfig && \
+    make package/luci-theme-kucat/compile V=s
 
 # 设置主机名和密码
 RUN echo "config system" > /etc/config/system
