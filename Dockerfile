@@ -41,9 +41,6 @@ RUN echo "config system" > /etc/config/system
 RUN echo "    option hostname '$HOSTNAME'" >> /etc/config/system
 RUN echo "    option timezone 'UTC'" >> /etc/config/system
 
-# 支持系统重启
-RUN opkg install luci-app-reboot
-
 # 设置内核和系统分区大小
 RUN echo "CONFIG_TARGET_KERNEL_PARTSIZE=64" >> .config
 RUN echo "CONFIG_TARGET_ROOTFS_PARTSIZE=2048" >> .config
@@ -55,8 +52,28 @@ RUN echo "CONFIG_TARGET_KERNEL_VERSION=$KERNEL_VERSION" >> .config
 RUN echo "CONFIG_VERSION_DIST=\"OpenWrt\"" >> .config
 RUN echo "CONFIG_VERSION_NICK=\"04543473+$(date +%Y%m%d)\"" >> .config
 
+# 添加软件源
+RUN echo "src/gz custom https://github.com/cdny123/openwrt-package1" >> /etc/opkg/customfeeds.conf
+
+# 添加 APP 插件
+RUN git clone https://github.com/sirpdboy/chatgpt-web.git package/luci-app-chatgpt
+RUN git clone https://github.com/lq-wq/luci-app-quickstart.git package/luci-app-quickstart
+RUN git clone https://github.com/sirpdboy/luci-app-lucky.git package/lucky
+RUN git clone https://github.com/morytyann/OpenWrt-mihomo.git package/luci-app-mihomo
+
+# 添加 Themes 主题
+RUN git clone https://github.com/xiaoqingfengATGH/luci-theme-infinityfreedom.git package/luci-theme-infinityfreedom
+RUN git clone https://github.com/jerrykuku/luci-theme-argon.git  package/luci-theme-argon
+RUN git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-theme-kucat
+
 # 添加 IStore
 RUN git clone https://github.com/linkease/istore.git package/istore
+
+# 安装 opkg
+RUN opkg update && opkg install opkg
+
+# 支持系统重启
+RUN opkg install luci-app-reboot
 
 # 添加 Docker 支持
 RUN opkg install luci-app-docker
@@ -71,20 +88,6 @@ RUN cd package/luci-app-openclash && ./scripts/download_clash.sh
 
 # 开启 NTFS 格式盘挂载所需依赖
 RUN opkg install kmod-fs-ntfs ntfs-3g
-
-# 添加 APP 插件
-RUN git clone https://github.com/sirpdboy/chatgpt-web.git package/luci-app-chatgpt
-RUN git clone https://github.com/lq-wq/luci-app-quickstart.git package/luci-app-quickstart
-RUN git clone https://github.com/sirpdboy/luci-app-lucky.git package/lucky
-RUN git clone https://github.com/morytyann/OpenWrt-mihomo.git package/luci-app-mihomo
-
-# 添加 Themes 主题
-RUN git clone https://github.com/xiaoqingfengATGH/luci-theme-infinityfreedom.git package/luci-theme-infinityfreedom
-RUN git clone https://github.com/jerrykuku/luci-theme-argon.git  package/luci-theme-argon
-RUN git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-theme-kucat
-
-# 添加软件源
-RUN echo "src/gz custom https://github.com/cdny123/openwrt-package1" >> /etc/opkg/customfeeds.conf
 
 # 添加其他插件
 RUN opkg install luci-app-ttyd luci-app-alist luci-app-upnp luci-app-poweroff luci-app-diskman luci-app-quickstart
