@@ -19,17 +19,28 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
 
-    - name: Login to Docker Hub
+    - name: Login to Docker Hub (optional)
       uses: docker/login-action@v2
       with:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
     - name: Build Docker image
-      run: docker build -t openwrt-custom:latest .
+      run: |
+        docker build -t openwrt-custom:latest .
+        if [ $? -ne 0 ]; then
+          echo "Docker build failed"
+          exit 1
+        fi
 
     - name: Save Docker image
-      run: docker save -o openwrt-custom.tar openwrt-custom:latest
+      run: |
+        docker save -o openwrt-custom.tar openwrt-custom:latest
+        ls -lh openwrt-custom.tar
+        if [ ! -f openwrt-custom.tar ]; then
+          echo "Failed to save Docker image"
+          exit 1
+        fi
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
