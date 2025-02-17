@@ -15,34 +15,31 @@ USER root
 # 设置工作目录
 WORKDIR /openwrt
 
-# 复制预配置的 .config 文件
-COPY .config /openwrt/.config
-
 # 手动创建 network 文件
-RUN echo "config interface 'loopback'" > /etc/config/network && \
-    echo "    option ifname 'lo'" >> /etc/config/network && \
-    echo "    option proto 'static'" >> /etc/config/network && \
-    echo "    option ipaddr '127.0.0.1'" >> /etc/config/network && \
-    echo "    option netmask '255.0.0.0'" >> /etc/config/network && \
-    echo "" >> /etc/config/network && \
-    echo "config globals 'globals'" >> /etc/config/network && \
-    echo "    option ula_prefix 'auto'" >> /etc/config/network && \
-    echo "" >> /etc/config/network && \
-    echo "config interface 'lan'" >> /etc/config/network && \
-    echo "    option type 'bridge'" >> /etc/config/network && \
-    echo "    option ifname 'eth0'" >> /etc/config/network && \
-    echo "    option proto 'static'" >> /etc/config/network && \
-    echo "    option ipaddr '192.168.1.1'" >> /etc/config/network && \
-    echo "    option netmask '255.255.255.0'" >> /etc/config/network && \
-    echo "    option ip6assign '60'" >> /etc/config/network
+RUN echo "config interface 'loopback'" > /openwrt/etc/config/network && \
+    echo "    option ifname 'lo'" >> /openwrt/etc/config/network && \
+    echo "    option proto 'static'" >> /openwrt/etc/config/network && \
+    echo "    option ipaddr '127.0.0.1'" >> /openwrt/etc/config/network && \
+    echo "    option netmask '255.0.0.0'" >> /openwrt/etc/config/network && \
+    echo "" >> /openwrt/etc/config/network && \
+    echo "config globals 'globals'" >> /openwrt/etc/config/network && \
+    echo "    option ula_prefix 'auto'" >> /openwrt/etc/config/network && \
+    echo "" >> /openwrt/etc/config/network && \
+    echo "config interface 'lan'" >> /openwrt/etc/config/network && \
+    echo "    option type 'bridge'" >> /openwrt/etc/config/network && \
+    echo "    option ifname 'eth0'" >> /openwrt/etc/config/network && \
+    echo "    option proto 'static'" >> /openwrt/etc/config/network && \
+    echo "    option ipaddr '192.168.1.1'" >> /openwrt/etc/config/network && \
+    echo "    option netmask '255.255.255.0'" >> /openwrt/etc/config/network && \
+    echo "    option ip6assign '60'" >> /openwrt/etc/config/network
 
 # 修改后台地址
-RUN sed -i "s/192.168.1.1/$LAN_IP/g" /etc/config/network
+RUN sed -i "s/192.168.1.1/$LAN_IP/g" /openwrt/etc/config/network
 
 # 设置主机名和密码
-RUN echo "config system" > /etc/config/system
-RUN echo "    option hostname '$HOSTNAME'" >> /etc/config/system
-RUN echo "    option timezone 'UTC'" >> /etc/config/system
+RUN echo "config system" > /openwrt/etc/config/system
+RUN echo "    option hostname '$HOSTNAME'" >> /openwrt/etc/config/system
+RUN echo "    option timezone 'UTC'" >> /openwrt/etc/config/system
 
 # 设置内核和系统分区大小
 RUN echo "CONFIG_TARGET_KERNEL_PARTSIZE=64" >> .config
@@ -90,23 +87,23 @@ RUN mkdir package/luci-app-openclash && \
     git branch --set-upstream-to=origin/master master
 
 # 优化系统和网络设置
-RUN echo "net.core.rmem_max=12582912" >> /etc/sysctl.conf && \
-    echo "net.core.wmem_max=12582912" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_rmem=10240 87380 12582912" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_wmem=10240 87380 12582912" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_window_scaling=1" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_timestamps=1" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_sack=1" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_fin_timeout=15" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_keepalive_time=1800" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_keepalive_probes=5" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_keepalive_intvl=75" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_max_syn_backlog=8192" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_max_tw_buckets=1440000" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_tw_reuse=1" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_fastopen=3" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_mtu_probing=1" >> /etc/sysctl.conf && \
-    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+RUN echo "net.core.rmem_max=12582912" >> /openwrt/etc/sysctl.conf && \
+    echo "net.core.wmem_max=12582912" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_rmem=10240 87380 12582912" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_wmem=10240 87380 12582912" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_window_scaling=1" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_timestamps=1" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_sack=1" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_fin_timeout=15" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_keepalive_time=1800" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_keepalive_probes=5" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_keepalive_intvl=75" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_max_syn_backlog=8192" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_max_tw_buckets=1440000" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_tw_reuse=1" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_fastopen=3" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_mtu_probing=1" >> /openwrt/etc/sysctl.conf && \
+    echo "net.ipv4.tcp_congestion_control=bbr" >> /openwrt/etc/sysctl.conf
 
 # 复制预配置的 .config 文件
 COPY .config /openwrt/.config
