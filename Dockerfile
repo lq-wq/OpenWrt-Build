@@ -52,8 +52,19 @@ RUN echo "CONFIG_TARGET_KERNEL_VERSION=$KERNEL_VERSION" >> .config
 RUN echo "CONFIG_VERSION_DIST=\"OpenWrt\"" >> .config
 RUN echo "CONFIG_VERSION_NICK=\"04543473+$(date +%Y%m%d)\"" >> .config
 
+# 创建 /etc/opkg 目录
+RUN mkdir -p /etc/opkg
+
 # 添加软件源
 RUN echo "src/gz custom https://github.com/cdny123/openwrt-package1" >> /etc/opkg/customfeeds.conf
+
+# 更新 feeds 并安装 opkg 及其依赖项
+RUN ./scripts/feeds update -a && \
+    ./scripts/feeds install -a
+
+# 安装必要的工具和软件包
+RUN opkg update && \
+    opkg install opkg
 
 # 添加 APP 插件
 RUN git clone https://github.com/sirpdboy/chatgpt-web.git package/luci-app-chatgpt
@@ -68,9 +79,6 @@ RUN git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-them
 
 # 添加 IStore
 RUN git clone https://github.com/linkease/istore.git package/istore
-
-# 安装 opkg
-RUN opkg update && opkg install opkg
 
 # 支持系统重启
 RUN opkg install luci-app-reboot
