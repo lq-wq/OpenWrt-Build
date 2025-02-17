@@ -1,7 +1,8 @@
 # 使用 OpenWrt ImageBuilder 作为基础镜像
-FROM openwrt/imagebuilder:x86-64-24.10
+FROM openwrt/imagebuilder:x86-64-openwrt-24.10
     
 # 设置环境变量
+ENV PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 ENV OPENWRT_VERSION=24.10
 ENV KERNEL_VERSION=6.6
 ENV HOSTNAME=openwrt-NIT
