@@ -86,27 +86,27 @@ RUN mkdir package/luci-app-openclash && \
     git pull --depth 1 origin master && \
     git branch --set-upstream-to=origin/master master
 
-# 运行 download_clash.sh 脚本
-RUN cd package/luci-app-openclash && ./scripts/download_clash.sh
-
 # 优化系统和网络设置
-RUN echo "net.core.rmem_max=12582912" >> /etc/sysctl.conf
-RUN echo "net.core.wmem_max=12582912" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_rmem=10240 87380 12582912" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_wmem=10240 87380 12582912" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_window_scaling=1" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_timestamps=1" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_sack=1" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_fin_timeout=15" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_keepalive_time=1800" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_keepalive_probes=5" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_keepalive_intvl=75" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_max_syn_backlog=8192" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_max_tw_buckets=1440000" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_tw_reuse=1" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_fastopen=3" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_mtu_probing=1" >> /etc/sysctl.conf
-RUN echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+RUN echo "net.core.rmem_max=12582912" >> /etc/sysctl.conf && \
+    echo "net.core.wmem_max=12582912" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_rmem=10240 87380 12582912" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_wmem=10240 87380 12582912" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_window_scaling=1" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_timestamps=1" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_sack=1" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_fin_timeout=15" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_keepalive_time=1800" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_keepalive_probes=5" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_keepalive_intvl=75" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_max_syn_backlog=8192" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_max_tw_buckets=1440000" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_tw_reuse=1" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_fastopen=3" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_mtu_probing=1" >> /etc/sysctl.conf && \
+    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+
+# 应用 sysctl 配置
+RUN sysctl -p
 
 # 构建固件
 RUN make -j$(nproc)
