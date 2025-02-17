@@ -41,9 +41,6 @@ RUN echo "config system" > /etc/config/system
 RUN echo "    option hostname '$HOSTNAME'" >> /etc/config/system
 RUN echo "    option timezone 'UTC'" >> /etc/config/system
 
-# 添加在线更新功能
-RUN opkg install luci-app-update
-
 # 支持系统重启
 RUN opkg install luci-app-reboot
 
