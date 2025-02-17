@@ -7,11 +7,10 @@ ENV HOSTNAME=openwrt-NIT
 ENV LAN_IP=192.168.6.1
 ENV ROOT_PASSWORD=""
 
-# 更新系统
 FROM openwrt:latest  # 确保使用包含 opkg 的基础镜像
 
 # 安装 opkg（如果基础镜像中没有）
-# RUN opkg update && opkg install opkg  # 如果基础镜像中没有 opkg，可以取消注释此行
+RUN opkg update && opkg install opkg  # 如果基础镜像中没有 opkg，取消注释此行
 
 RUN opkg update
 
