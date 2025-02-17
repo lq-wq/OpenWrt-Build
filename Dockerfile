@@ -1,5 +1,5 @@
 # 使用 OpenWrt ImageBuilder 作为基础镜像
-FROM openwrt/imagebuilder:x86-64-openwrt-24.10.0
+FROM openwrt/imagebuilder:x86-64-openwrt-24.10
 
 # 创建 /etc/opkg 目录并配置 distfeeds.conf
 RUN mkdir -p /etc/opkg && \
