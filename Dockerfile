@@ -107,6 +107,3 @@ RUN echo "net.core.rmem_max=12582912" >> /etc/sysctl.conf && \
 
 # 应用 sysctl 配置
 RUN sysctl -p
-
-# 构建固件
-RUN make -j$(nproc)
