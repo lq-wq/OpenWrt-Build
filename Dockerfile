@@ -18,6 +18,9 @@ WORKDIR /openwrt
 # 复制预配置的 .config 文件
 COPY .config /openwrt/.config
 
+# 创建 /etc/opkg 目录
+RUN mkdir -p /openwrt/etc/opkg
+
 # 添加软件源
 RUN echo "src/gz custom https://github.com/cdny123/openwrt-package1" >> /openwrt/etc/opkg/customfeeds.conf
 
