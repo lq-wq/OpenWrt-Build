@@ -9,6 +9,9 @@ ENV HOSTNAME=openwrt-NIT
 ENV LAN_IP=192.168.6.1
 ENV ROOT_PASSWORD=""
 
+# 创建 /etc/config 目录
+RUN mkdir -p /etc/config
+
 # 设置主机名和密码
 RUN echo "config system" > /etc/config/system
 RUN echo "    option hostname '$HOSTNAME'" >> /etc/config/system
