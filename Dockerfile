@@ -76,15 +76,21 @@ RUN git clone https://github.com/linkease/istore.git package/istore
 RUN git clone https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci-app-adguardhome
 RUN git clone https://github.com/AdguardTeam/AdGuardHome.git package/AdGuardHome
 
-# 添加 OpenClash
-RUN git clone -b master https://github.com/vernesong/OpenClash.git package/luci-app-openclash
+# 克隆 luci-app-openclash 项目
+RUN mkdir package/luci-app-openclash && \
+    cd package/luci-app-openclash && \
+    git init && \
+    git remote add -f origin https://github.com/vernesong/OpenClash.git && \
+    git config core.sparsecheckout true && \
+    echo "luci-app-openclash" >> .git/info/sparse-checkout && \
+    git pull --depth 1 origin master && \
+    git branch --set-upstream-to=origin/master master
+
+# 检查 scripts 目录是否存在 download_clash.sh
+RUN ls -la package/luci-app-openclash/scripts/
+
+# 运行 download_clash.sh 脚本
 RUN cd package/luci-app-openclash && ./scripts/download_clash.sh
-
-# 开启 NTFS 格式盘挂载所需依赖
-RUN opkg install kmod-fs-ntfs ntfs-3g
-
-# 添加其他插件
-RUN opkg install luci-app-ttyd luci-app-alist luci-app-upnp luci-app-poweroff luci-app-diskman luci-app-quickstart
 
 # 优化系统和网络设置
 RUN echo "net.core.rmem_max=12582912" >> /etc/sysctl.conf
