@@ -1,5 +1,5 @@
 # 使用 OpenWrt ImageBuilder 作为基础镜像
-FROM openwrt/imagebuilder:x86-64-openwrt-24.10
+FROM openwrt/imagebuilder:x86-64-openwrt-24.10-SNAPSHOT
 
 # 切换到 root 用户
 USER root
@@ -7,7 +7,7 @@ USER root
 # 创建 /etc/opkg 目录并配置 distfeeds.conf
 RUN mkdir -p /etc/opkg && \
     echo "src/gz base http://downloads.openwrt.org/releases/24.10-SNAPSHOT/packages/x86_64/base" | tee /etc/opkg/distfeeds.conf && \
-    opkg update && opkg install opkg
+    opkg update
 
 # 设置环境变量
 ENV OPENWRT_VERSION=24.10
@@ -79,7 +79,7 @@ RUN git clone https://github.com/morytyann/OpenWrt-mihomo.git package/luci-app-m
 
 # 添加 Themes 主题
 RUN git clone https://github.com/xiaoqingfengATGH/luci-theme-infinityfreedom.git package/luci-theme-infinityfreedom
-RUN git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-app-kucat
+RUN git clone https://github.com/sirpdboy/luci-app-kucat.git package/luci-app-kucat
 
 # 添加软件源
 RUN echo "src/gz custom https://github.com/cdny123/openwrt-package1" >> /etc/opkg/customfeeds.conf
