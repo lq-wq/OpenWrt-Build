@@ -63,10 +63,6 @@ WORKDIR /openwrt
 RUN ./scripts/feeds update -a && \
     ./scripts/feeds install -a
 
-# 安装必要的工具和软件包
-RUN opkg update && \
-    opkg install opkg
-
 # 添加 APP 插件
 RUN git clone https://github.com/sirpdboy/chatgpt-web.git package/luci-app-chatgpt
 RUN git clone https://github.com/lq-wq/luci-app-quickstart.git package/luci-app-quickstart
