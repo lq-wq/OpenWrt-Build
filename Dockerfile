@@ -72,12 +72,6 @@ RUN git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-them
 # 添加 IStore
 RUN git clone https://github.com/linkease/istore.git package/istore
 
-# 支持系统重启
-RUN opkg install luci-app-reboot
-
-# 添加 Docker 支持
-RUN opkg install luci-app-docker
-
 # 添加 AdGuardHome 插件和核心
 RUN git clone https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci-app-adguardhome
 RUN git clone https://github.com/AdguardTeam/AdGuardHome.git package/AdGuardHome
