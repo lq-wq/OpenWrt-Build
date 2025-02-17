@@ -72,7 +72,8 @@ RUN git clone https://github.com/morytyann/OpenWrt-mihomo.git package/luci-app-m
 
 # 添加 Themes 主题
 RUN git clone https://github.com/xiaoqingfengATGH/luci-theme-infinityfreedom.git package/luci-theme-infinityfreedom
-RUN git clone https://github.com/sirpdboy/luci-app-kucat.git package/luci-app-kucat
+RUN git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-theme-kucat
+RUN git clone https://github.com/jerrykuku/luci-theme-argon.git  package/luci-theme-argon
 
 # 添加软件源
 RUN echo "src/gz custom https://github.com/cdny123/openwrt-package1" >> /etc/opkg/customfeeds.conf
