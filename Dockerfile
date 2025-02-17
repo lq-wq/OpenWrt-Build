@@ -2,7 +2,8 @@
 FROM openwrt/imagebuilder:x86-64-openwrt-24.10
 
 # 安装 opkg
-RUN echo "src/gz base http://downloads.openwrt.org/releases/24.10-SNAPSHOT/packages/x86_64/base" > /etc/opkg/distfeeds.conf && \
+RUN mkdir -p /etc/opkg && \
+    echo "src/gz base http://downloads.openwrt.org/releases/24.10-SNAPSHOT/packages/x86_64/base" > /etc/opkg/distfeeds.conf && \
     opkg update && opkg install opkg
 
 # 设置环境变量
