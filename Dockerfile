@@ -105,6 +105,8 @@ RUN echo "net.core.rmem_max=12582912" >> /etc/sysctl.conf && \
     echo "net.ipv4.tcp_mtu_probing=1" >> /etc/sysctl.conf && \
     echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
 
+# 复制预配置的 .config 文件
+COPY .config /openwrt/.config
+
 # 构建固件
-RUN make defconfig
 RUN make -j$(nproc)
