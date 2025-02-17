@@ -105,5 +105,5 @@ RUN echo "net.core.rmem_max=12582912" >> /etc/sysctl.conf && \
     echo "net.ipv4.tcp_mtu_probing=1" >> /etc/sysctl.conf && \
     echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
 
-# 应用 sysctl 配置
-RUN sysctl -p
+# 构建固件
+RUN make -j$(nproc)
