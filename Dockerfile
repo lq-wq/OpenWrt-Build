@@ -9,17 +9,6 @@ ENV HOSTNAME=openwrt-NIT
 ENV LAN_IP=192.168.6.1
 ENV ROOT_PASSWORD=""
 
-# 克隆主题仓库
-RUN git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-theme-kucat
-
-# 安装 opkg 和依赖项
-RUN ./scripts/feeds update -a && \
-    ./scripts/feeds install -a
-
-# 编译并安装主题
-RUN make defconfig && \
-    make package/luci-theme-kucat/compile V=s
-
 # 设置主机名和密码
 RUN echo "config system" > /etc/config/system
 RUN echo "    option hostname '$HOSTNAME'" >> /etc/config/system
@@ -81,6 +70,7 @@ RUN git clone https://github.com/morytyann/OpenWrt-mihomo.git package/luci-app-m
 # 添加 Themes 主题
 RUN git clone https://github.com/xiaoqingfengATGH/luci-theme-infinityfreedom.git package/luci-theme-infinityfreedom
 RUN git clone https://github.com/jerrykuku/luci-theme-argon.git  package/luci-theme-argon
+RUN git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-theme-kucat
 
 # 添加软件源
 RUN echo "src/gz custom https://github.com/cdny123/openwrt-package1" >> /etc/opkg/customfeeds.conf
