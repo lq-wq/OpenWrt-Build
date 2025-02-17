@@ -53,12 +53,13 @@ RUN echo "CONFIG_VERSION_DIST=\"OpenWrt\"" >> .config
 RUN echo "CONFIG_VERSION_NICK=\"04543473+$(date +%Y%m%d)\"" >> .config
 
 # 创建 /etc/opkg 目录
-RUN mkdir -p /etc/opkg
+RUN mkdir -p /openwrt/etc/opkg
 
 # 添加软件源
-RUN echo "src/gz custom https://github.com/cdny123/openwrt-package1" >> /etc/opkg/customfeeds.conf
+RUN echo "src/gz custom https://github.com/cdny123/openwrt-package1" >> /openwrt/etc/opkg/customfeeds.conf
 
 # 更新 feeds 并安装 opkg 及其依赖项
+WORKDIR /openwrt
 RUN ./scripts/feeds update -a && \
     ./scripts/feeds install -a
 
