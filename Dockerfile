@@ -24,6 +24,12 @@ RUN mkdir -p /openwrt/etc/opkg
 # 添加软件源
 RUN echo "src/gz custom https://github.com/cdny123/openwrt-package1" >> /openwrt/etc/opkg/customfeeds.conf
 
+# 更新 feeds
+RUN ./scripts/feeds update -a
+
+# 安装 feeds 包
+RUN ./scripts/feeds install -a
+
 # 添加 APP 插件
 RUN git clone https://github.com/sirpdboy/chatgpt-web.git package/luci-app-chatgpt
 RUN git clone https://github.com/lq-wq/luci-app-quickstart.git package/luci-app-quickstart
