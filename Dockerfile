@@ -1,3 +1,4 @@
+# 使用 OpenWrt ImageBuilder 作为基础镜像
 FROM openwrt/imagebuilder:x86-64-openwrt-24.10
 
 # 设置环境变量
@@ -7,13 +8,10 @@ ENV HOSTNAME=openwrt-NIT
 ENV LAN_IP=192.168.6.1
 ENV ROOT_PASSWORD=""
 
-FROM openwrt:latest  # 确保使用包含 opkg 的基础镜像
-
-# 安装 opkg（如果基础镜像中没有）
-RUN opkg update && opkg install opkg  # 如果基础镜像中没有 opkg，取消注释此行
+# 更新系统
 RUN opkg update
 
-# 安装Argon主题
+# 安装 Argon 主题
 RUN opkg install luci-theme-argon
 
 # 设置主机名和密码
@@ -51,30 +49,30 @@ RUN echo "CONFIG_TARGET_KERNEL_VERSION=$KERNEL_VERSION" >> .config
 RUN echo "CONFIG_VERSION_DIST=\"OpenWrt\"" >> .config
 RUN echo "CONFIG_VERSION_NICK=\"04543473+$(date +%Y%m%d)\"" >> .config
 
-# 添加IStore
+# 添加 IStore
 RUN git clone https://github.com/linkease/istore.git package/istore
 
-# 添加Docker支持
+# 添加 Docker 支持
 RUN opkg install luci-app-docker
 
-# 添加AdGuardHome插件和核心
+# 添加 AdGuardHome 插件和核心
 RUN git clone https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci-app-adguardhome
 RUN git clone https://github.com/AdguardTeam/AdGuardHome.git package/AdGuardHome
 
-# 添加OpenClash
+# 添加 OpenClash
 RUN git clone -b master https://github.com/vernesong/OpenClash.git package/luci-app-openclash
 RUN cd package/luci-app-openclash && ./scripts/download_clash.sh
 
-# 开启NTFS格式盘挂载所需依赖
+# 开启 NTFS 格式盘挂载所需依赖
 RUN opkg install kmod-fs-ntfs ntfs-3g
 
-# 添加APP插件
+# 添加 APP 插件
 RUN git clone https://github.com/sirpdboy/chatgpt-web.git package/luci-app-chatgpt
 RUN git clone https://github.com/lq-wq/luci-app-quickstart.git package/luci-app-quickstart
 RUN git clone https://github.com/sirpdboy/luci-app-lucky.git package/lucky
 RUN git clone https://github.com/morytyann/OpenWrt-mihomo.git package/luci-app-mihomo
 
-# 添加Themes主题
+# 添加 Themes 主题
 RUN git clone https://github.com/xiaoqingfengATGH/luci-theme-infinityfreedom.git package/luci-theme-infinityfreedom
 RUN git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-app-kucat
 
