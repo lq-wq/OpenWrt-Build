@@ -101,10 +101,15 @@ jobs:
       id: organize
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
-        cd openwrt/bin/targets/*/*
-        rm -rf packages
-        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
-        echo "status=success" >> $GITHUB_OUTPUT
+        if [ -d "openwrt/bin/targets/*/*" ]; then
+          cd openwrt/bin/targets/*/*
+          rm -rf packages
+          echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+          echo "status=success" >> $GITHUB_OUTPUT
+        else
+          echo "Error: Directory openwrt/bin/targets/*/* does not exist."
+          exit 1
+        fi
 
     - name: Upload firmware directory
       uses: actions/upload-artifact@main
