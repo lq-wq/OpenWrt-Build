@@ -76,6 +76,13 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
+    - name: Check if firmware directory exists
+      run: |
+        if [ ! -d "openwrt/bin/targets/*/*" ]; then
+          echo "Error: Directory openwrt/bin/targets/*/* does not exist."
+          exit 1
+        fi
+
     - name: Compile the firmware
       id: compile
       run: |
