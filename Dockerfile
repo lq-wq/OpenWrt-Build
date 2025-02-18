@@ -102,7 +102,7 @@ RUN echo "net.core.rmem_max=12582912" >> /etc/sysctl.conf && \
 
 # 生成 defconfig 文件
 RUN cd /openwrt && \
-    make x86_64-generic_defconfig
+    make defconfig
 
 # 下载软件包
 RUN cd /openwrt && \
