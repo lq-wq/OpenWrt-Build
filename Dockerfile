@@ -101,4 +101,4 @@ RUN echo "net.core.rmem_max=12582912" >> /etc/sysctl.conf && \
     echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
 
 # 构建固件
-RUN make -j$(nproc)
+RUN make -j2 V=1
