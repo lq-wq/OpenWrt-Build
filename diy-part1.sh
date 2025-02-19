@@ -1,5 +1,6 @@
 # 添加 luci-app-adguardhome 和 luci-app-openclash 及其核心组件
 echo "src-git helloworld https://github.com/fw876/helloworld" >> feeds.conf.default
+echo "src-git openwrt-package1 https://github.com/cdny123/openwrt-package1" >> feeds.conf.default
 ./scripts/feeds update -a
 ./scripts/feeds install -a
 
@@ -41,5 +42,5 @@ git clone --depth=1 https://github.com/kongfl888/luci-app-adguardhome package/lu
 #svn export https://github.com/haiibo/packages/trunk/luci-theme-netgear package/luci-theme-netgear
 
 # iStore
-#svn export https://github.com/linkease/istore-ui/trunk/app-store-ui package/app-store-ui
-#svn export https://github.com/linkease/istore/trunk/luci package/luci-app-store
+#svn export https://github.com/cdny123/openwrt-package1/tree/main/app-store-ui package/app-store-ui
+#svn export https://github.com/cdny123/openwrt-package1/tree/main/luci-app-store package/luci-app-store
