@@ -81,6 +81,3 @@ git clone https://github.com/Jason6111/luci-app-netdata ./feeds/luci/application
 #svn export https://github.com/haiibo/packages/trunk/luci-theme-opentomcat package/luci-theme-opentomcat
 #svn export https://github.com/haiibo/packages/trunk/luci-theme-netgear package/luci-theme-netgear
 git clone https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
-# iStore
-#svn export https://github.com/cdny123/openwrt-package1/tree/main/app-store-ui package/app-store-ui
-#svn export https://github.com/cdny123/openwrt-package1/tree/main/luci-app-store package/luci-app-store
