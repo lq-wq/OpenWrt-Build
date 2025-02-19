@@ -13,6 +13,15 @@ if [ ! -d "openwrt/target/linux/x86" ]; then
   mkdir -p "openwrt/target/linux/x86"
 fi
 
+# 配置终端环境
+export TERM=xterm
+
+# 安装 uci 命令
+if ! command -v uci &> /dev/null; then
+  opkg update
+  opkg install uci
+fi
+
 
 # 添加 luci-app-adguardhome 和 luci-app-openclash 及其核心组件
 #echo "src-git helloworld https://github.com/fw876/helloworld" >> feeds.conf.default
