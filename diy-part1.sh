@@ -21,17 +21,11 @@ fi
     exit 1
 }
 
-# 添加 luci-app-adguardhome 和 luci-app-openclash 及其核心组件
-#echo "src-git helloworld https://github.com/fw876/helloworld" >> feeds.conf.default
-#echo "src-git openwrt-package1 https://github.com/cdny123/openwrt-package1" >> feeds.conf.default
-#./scripts/feeds update -a
-#./scripts/feeds install -a
-
 # 添加 APP 插件
-#git clone https://github.com/sirpdboy/chatgpt-web.git package/luci-app-chatgpt      # chatgpt-web
-#git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-app-kucat   # kucat主题
-#git clone https://github.com/lq-wq/luci-app-quickstart.git package/luci-app-quickstart   # iStoreOS-web
-#git clone https://github.com/sirpdboy/luci-app-lucky.git package/lucky      # luci-app-lucky 端口转发
+git clone https://github.com/sirpdboy/chatgpt-web.git package/luci-app-chatgpt      # chatgpt-web
+git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-app-kucat   # kucat主题
+git clone https://github.com/lq-wq/luci-app-quickstart.git package/luci-app-quickstart   # iStoreOS-web
+git clone https://github.com/sirpdboy/luci-app-lucky.git package/lucky      # luci-app-lucky 端口转发
 
 # 添加额外插件
 #git clone --depth=1 https://github.com/kongfl888/luci-app-adguardhome package/luci-app-adguardhome
