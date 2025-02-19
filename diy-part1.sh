@@ -1,17 +1,7 @@
 
-# 确保 uci 命令已安装
-if ! command -v uci &> /dev/null; then
-    echo "uci 命令未找到，正在安装..."
-    opkg update
-    opkg install uci
-fi
-
 # 动态添加源配置
 echo "src-git openwrt-package1 https://github.com/cdny123/openwrt-package1" >> /etc/opkg/customfeeds.conf
 echo "src-git helloworld https://github.com/fw876/helloworld" >> /etc/opkg/customfeeds.conf
-
-# 更新包列表
-opkg update
 
 # 添加 luci-app-adguardhome 和 luci-app-openclash 及其核心组件
 #echo "src-git helloworld https://github.com/fw876/helloworld" >> feeds.conf.default
