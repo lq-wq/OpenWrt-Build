@@ -7,7 +7,7 @@ git clone --no-checkout https://github.com/cdny123/openwrt-package1.git package/
 cd package/openwrt-package1
 
 # 启用 sparse-checkout 并指定要导出的文件
-git sparse-checkout set app-store-ui luci-app-store luci-app-quickstart
+git sparse-checkout set app-store-ui luci-app-store
 
 # 检出指定的文件
 git checkout
@@ -15,13 +15,32 @@ git checkout
 # 移动文件到正确的路径
 mv app-store-ui ../app-store-ui
 mv luci-app-store ../luci-app-store
-mv luci-app-quickstart ../luci-app-quickstart
 
 # 返回上级目录
 cd ../..
 
 # 清理克隆的仓库目录
 rm -rf package/openwrt-package1
+
+# 更新和安装 feeds
+cd openwrt
+./scripts/feeds update -a
+./scripts/feeds install -a
+
+# 确保 ppp-mod-pppoe 包已安装
+./scripts/feeds install ppp-mod-pppoe
+
+# 清理之前的构建缓存
+make dirclean
+
+# 生成默认配置
+make defconfig
+
+# 下载所有依赖包
+make download -j8
+
+# 编译固件
+make -j$(nproc) || make -j1 || make -j1 V=s
 
 # Uncomment a feed source
 if sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default; then
