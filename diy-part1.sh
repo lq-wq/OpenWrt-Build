@@ -5,6 +5,27 @@ fi
 echo "src-git openwrt-package1 https://github.com/cdny123/openwrt-package1" | sudo tee -a /etc/opkg/customfeeds.conf > /dev/null
 echo "src-git helloworld https://github.com/fw876/helloworld" | sudo tee -a /etc/opkg/customfeeds.conf > /dev/null
 
+# Uncomment a feed source
+if sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default; then
+    echo "Uncommented helloworld feed source."
+else
+    echo "Failed to uncomment helloworld feed source." >&2
+    exit 1
+fi
+
+# Add feed sources
+{
+    echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall'
+    echo 'src-git openclash https://github.com/vernesong/OpenClash'
+    echo 'src-git adguardhome https://github.com/rufengsuixing/luci-app-adguardhome'
+    echo 'src-git kenzo https://github.com/kenzok8/openwrt-packages'
+    echo 'src-git small https://github.com/kenzok8/small'
+    #echo 'src-git mosdns https://github.com/sbwml/luci-app-mosdns'
+} >> feeds.conf.default && echo "Added feed sources." || {
+    echo "Failed to add feed sources." >&2
+    exit 1
+}
+
 # 检查目录是否存在，如果不存在则创建
 if [ ! -d "openwrt/bin/targets" ]; then
   mkdir -p "openwrt/bin/targets"
