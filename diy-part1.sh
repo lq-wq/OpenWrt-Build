@@ -1,5 +1,7 @@
-
 # 动态添加源配置
+if [ ! -d "/etc/opkg" ]; then
+  mkdir -p "/etc/opkg"
+fi
 echo "src-git openwrt-package1 https://github.com/cdny123/openwrt-package1" >> /etc/opkg/customfeeds.conf
 echo "src-git helloworld https://github.com/fw876/helloworld" >> /etc/opkg/customfeeds.conf
 
@@ -16,7 +18,14 @@ fi
 # 配置终端环境
 export TERM=xterm
 
-# 安装 uci 命令
+# 安装 opkg 和 uci 命令
+if ! command -v opkg &> /dev/null; then
+  echo "Installing opkg..."
+  # 假设 opkg 可以通过某种方式安装，例如从包管理器或下载
+  # 这里需要根据实际情况添加安装 opkg 的逻辑
+  # 例如： apt-get install opkg 或 wget + chmod + install
+fi
+
 if ! command -v uci &> /dev/null; then
   opkg update
   opkg install uci
