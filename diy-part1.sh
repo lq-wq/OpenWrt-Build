@@ -1,9 +1,3 @@
-# 动态添加源配置
-if [ ! -d "/etc/opkg" ]; then
-  sudo mkdir -p "/etc/opkg"
-fi
-echo "src-git openwrt-package1 https://github.com/cdny123/openwrt-package1" | sudo tee -a /etc/opkg/customfeeds.conf > /dev/null
-echo "src-git helloworld https://github.com/fw876/helloworld" | sudo tee -a /etc/opkg/customfeeds.conf > /dev/null
 
 # Uncomment a feed source
 if sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default; then
