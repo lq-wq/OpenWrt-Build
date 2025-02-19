@@ -40,7 +40,7 @@ jobs:
         sudo add-apt-repository multiverse
 
         # 更新软件源列表
-        sudo apt-get update
+        sudo apt-get update -qq
 
         # 清理不必要的文件
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
