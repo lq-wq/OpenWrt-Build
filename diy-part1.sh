@@ -1,3 +1,27 @@
+#!/bin/bash
+
+# 克隆 openwrt-package1 仓库
+git clone --no-checkout https://github.com/cdny123/openwrt-package1.git package/openwrt-package1
+
+# 进入克隆的仓库目录
+cd package/openwrt-package1
+
+# 启用 sparse-checkout 并指定要导出的文件
+git sparse-checkout set app-store-ui luci-app-store luci-app-quickstart
+
+# 检出指定的文件
+git checkout
+
+# 移动文件到正确的路径
+mv app-store-ui ../app-store-ui
+mv luci-app-store ../luci-app-store
+mv luci-app-quickstart ../luci-app-quickstart
+
+# 返回上级目录
+cd ../..
+
+# 清理克隆的仓库目录
+rm -rf package/openwrt-package1
 
 # Uncomment a feed source
 if sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default; then
@@ -43,7 +67,7 @@ sed -i '/CONFIG_PACKAGE_nikki/d' .config
 # 添加 APP 插件
 git clone https://github.com/sirpdboy/chatgpt-web.git package/luci-app-chatgpt      # chatgpt-web
 git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-app-kucat   # kucat主题
-git clone https://github.com/lq-wq/luci-app-quickstart.git package/luci-app-quickstart   # iStoreOS-web
+#git clone https://github.com/lq-wq/luci-app-quickstart.git package/luci-app-quickstart   # iStoreOS-web
 git clone https://github.com/sirpdboy/luci-app-lucky.git package/lucky      # luci-app-lucky 端口转发
 git clone https://github.com/destan19/OpenAppFilter.git package/OpenAppFilter   # 应用过滤
 git clone https://github.com/sirpdboy/luci-app-poweroffdevice package/luci-app-poweroffdevice   # 关机功能
