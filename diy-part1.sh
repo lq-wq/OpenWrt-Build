@@ -3,6 +3,11 @@
 echo "src-git openwrt-package1 https://github.com/cdny123/openwrt-package1" >> /etc/opkg/customfeeds.conf
 echo "src-git helloworld https://github.com/fw876/helloworld" >> /etc/opkg/customfeeds.conf
 
+# 检查目录是否存在，如果不存在则创建
+if [ ! -d "openwrt/bin/targets" ]; then
+  mkdir -p "openwrt/bin/targets"
+fi
+
 # 添加 luci-app-adguardhome 和 luci-app-openclash 及其核心组件
 #echo "src-git helloworld https://github.com/fw876/helloworld" >> feeds.conf.default
 #echo "src-git openwrt-package1 https://github.com/cdny123/openwrt-package1" >> feeds.conf.default
