@@ -21,6 +21,25 @@ fi
     exit 1
 }
 
+# 安装依赖库
+sudo apt-get update && sudo apt-get install -y build-essential libncurses5-dev libncursesw5-dev
+
+# 清理并更新代码
+cd openwrt
+git pull
+./scripts/feeds update -a
+./scripts/feeds install -a
+
+# 修复 shadowsocks 依赖
+sed -i 's/shadowsocks-libev-ss/shadowsocks-rust-ss/g' package/feeds/small/luci-app-*/Makefile
+
+# 添加缺失的软件包
+[ ! -d "package/wrtbwmon" ] && git clone https://github.com/brvphoenix/wrtbwmon package/wrtbwmon
+
+# 清理循环依赖
+sed -i '/CONFIG_PACKAGE_luci-app-fchomo/d' .config
+sed -i '/CONFIG_PACKAGE_nikki/d' .config
+
 # 添加 APP 插件
 git clone https://github.com/sirpdboy/chatgpt-web.git package/luci-app-chatgpt      # chatgpt-web
 git clone https://github.com/sirpdboy/luci-theme-kucat.git package/luci-app-kucat   # kucat主题
