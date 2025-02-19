@@ -9,11 +9,11 @@ fi
 
 # Add feed sources
 {
-    echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall'
+    #echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall'
     echo 'src-git openclash https://github.com/vernesong/OpenClash'
     echo 'src-git adguardhome https://github.com/rufengsuixing/luci-app-adguardhome'
-    echo 'src-git kenzo https://github.com/kenzok8/openwrt-packages'
-    echo 'src-git small https://github.com/kenzok8/small'
+    #echo 'src-git kenzo https://github.com/kenzok8/openwrt-packages'
+    #echo 'src-git small https://github.com/kenzok8/small'
     echo 'src-git infinityfreedomng https://github.com/xiaoqingfengATGH/luci-theme-infinityfreedom'
     #echo 'src-git mosdns https://github.com/sbwml/luci-app-mosdns'
 } >> feeds.conf.default && echo "Added feed sources." || {
