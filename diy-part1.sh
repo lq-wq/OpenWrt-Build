@@ -1,9 +1,9 @@
 # 动态添加源配置
 if [ ! -d "/etc/opkg" ]; then
-  mkdir -p "/etc/opkg"
+  sudo mkdir -p "/etc/opkg"
 fi
-echo "src-git openwrt-package1 https://github.com/cdny123/openwrt-package1" >> /etc/opkg/customfeeds.conf
-echo "src-git helloworld https://github.com/fw876/helloworld" >> /etc/opkg/customfeeds.conf
+echo "src-git openwrt-package1 https://github.com/cdny123/openwrt-package1" | sudo tee -a /etc/opkg/customfeeds.conf > /dev/null
+echo "src-git helloworld https://github.com/fw876/helloworld" | sudo tee -a /etc/opkg/customfeeds.conf > /dev/null
 
 # 检查目录是否存在，如果不存在则创建
 if [ ! -d "openwrt/bin/targets" ]; then
@@ -21,16 +21,14 @@ export TERM=xterm
 # 安装 opkg 和 uci 命令
 if ! command -v opkg &> /dev/null; then
   echo "Installing opkg..."
-  # 假设 opkg 可以通过某种方式安装，例如从包管理器或下载
-  # 这里需要根据实际情况添加安装 opkg 的逻辑
-  # 例如： apt-get install opkg 或 wget + chmod + install
+  sudo apt-get update
+  sudo apt-get install -y opkg
 fi
 
 if ! command -v uci &> /dev/null; then
   opkg update
   opkg install uci
 fi
-
 
 # 添加 luci-app-adguardhome 和 luci-app-openclash 及其核心组件
 #echo "src-git helloworld https://github.com/fw876/helloworld" >> feeds.conf.default
