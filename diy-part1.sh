@@ -15,23 +15,6 @@ if [ ! -d "openwrt/target/linux/x86" ]; then
   mkdir -p "openwrt/target/linux/x86"
 fi
 
-# 配置终端环境
-export TERM=xterm
-
-# 安装 opkg 和 uci 命令
-if ! command -v opkg &> /dev/null; then
-  echo "Installing opkg..."
-  # 使用 wget 下载 opkg 并安装
-  wget http://downloads.openwrt.org/snapshots/targets/x86/64/packages/Packages.gz
-  tar -xzf Packages.gz
-  sudo dpkg -i opkg_*.deb
-fi
-
-if ! command -v uci &> /dev/null; then
-  opkg update
-  opkg install uci
-fi
-
 # 添加 luci-app-adguardhome 和 luci-app-openclash 及其核心组件
 #echo "src-git helloworld https://github.com/fw876/helloworld" >> feeds.conf.default
 #echo "src-git openwrt-package1 https://github.com/cdny123/openwrt-package1" >> feeds.conf.default
