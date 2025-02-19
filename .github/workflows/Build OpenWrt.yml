@@ -46,6 +46,9 @@ jobs:
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
 
+    - name: Check disk space before cloning
+      run: df -hT
+
     - name: Clone source code
       working-directory: /workdir
       run: |
@@ -90,6 +93,9 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
+    - name: Check disk space after downloading packages
+      run: df -hT
+
     - name: Compile the firmware
       id: compile
       run: |
@@ -110,6 +116,51 @@ jobs:
 
     - name: Check space usage
       if: (!cancelled())
+      run: df -hT
+
+    - name: Clean up build artifacts
+      run: |
+        cd openwrt
+        make dirclean
+        find . -name "*.o" -exec rm -f {} \;
+        find . -name "*.ko" -exec rm -f {} \;
+        find . -name "*.so" -exec rm -f {} \;
+        find . -name "*.a" -exec rm -f {} \;
+        find . -name "*.symvers" -exec rm -f {} \;
+        find . -name "*.mod.c" -exec rm -f {} \;
+        find . -name "*.mod.o" -exec rm -f {} \;
+        find . -name "*.cmd" -exec rm -f {} \;
+        find . -name "*.d" -exec rm -f {} \;
+        find . -name "*.tmp" -exec rm -f {} \;
+        find . -name "*.log" -exec rm -f {} \;
+        find . -name "*.gz" -exec rm -f {} \;
+        find . -name "*.bz2" -exec rm -f {} \;
+        find . -name "*.xz" -exec rm -f {} \;
+        find . -name "*.zip" -exec rm -f {} \;
+        find . -name "*.tar" -exec rm -f {} \;
+        find . -name "*.tar.gz" -exec rm -f {} \;
+        find . -name "*.tar.bz2" -exec rm -f {} \;
+        find . -name "*.tar.xz" -exec rm -f {} \;
+        find . -name "*.img" -exec rm -f {} \;
+        find . -name "*.bin" -exec rm -f {} \;
+        find . -name "*.elf" -exec rm -f {} \;
+        find . -name "*.ko.cmd" -exec rm -f {} \;
+        find . -name "*.mod.c.cmd" -exec rm -f {} \;
+        find . -name "*.mod.o.cmd" -exec rm -f {} \;
+        find . -name "*.symvers.cmd" -exec rm -f {} \;
+        find . -name "*.order" -exec rm -f {} \;
+        find . -name "*.built-in.a.cmd" -exec rm -f {} \;
+        find . -name "*.built-in.o.cmd" -exec rm -f {} \;
+        find . -name "*.ko.unsigned" -exec rm -f {} \;
+        find . -name "*.ko.unsigned.cmd" -exec rm -f {} \;
+        find . -name "*.ko.unsigned.o" -exec rm -f {} \;
+        find . -name "*.ko.unsigned.o.cmd" -exec rm -f {} \;
+        find . -name "*.ko.unsigned.mod.c" -exec rm -f {} \;
+        find . -name "*.ko.unsigned.mod.c.cmd" -exec rm -f {} \;
+        find . -name "*.ko.unsigned.mod.o" -exec rm -f {} \;
+        find . -name "*.ko.unsigned.mod.o.cmd" -exec rm -f {} \;
+
+    - name: Check disk space after cleaning up
       run: df -hT
 
     - name: Upload bin directory
