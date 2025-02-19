@@ -21,8 +21,10 @@ export TERM=xterm
 # 安装 opkg 和 uci 命令
 if ! command -v opkg &> /dev/null; then
   echo "Installing opkg..."
-  sudo apt-get update
-  sudo apt-get install -y opkg
+  # 使用 wget 下载 opkg 并安装
+  wget http://downloads.openwrt.org/snapshots/targets/x86/64/packages/Packages.gz
+  tar -xzf Packages.gz
+  sudo dpkg -i opkg_*.deb
 fi
 
 if ! command -v uci &> /dev/null; then
