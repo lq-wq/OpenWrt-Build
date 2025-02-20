@@ -23,6 +23,14 @@ jobs:
         libssl-dev python3 python3-distutils python3-setuptools python3-venv rsync \
         unzip wget python3-pip zlib1g-dev
         
+    - name: Cache ccache
+      uses: actions/cache@v3
+      with:
+        path: ${{ github.workspace }}/ccache
+        key: ${{ runner.os }}-ccache-${{ env.TARGET }}
+        restore-keys: |
+          ${{ runner.os }}-ccache-
+        
     - name: Clone OpenWrt
       run: |
         git clone --depth=1 -b $REPO_BRANCH $REPO_URL openwrt
@@ -31,7 +39,7 @@ jobs:
     - name: Apply Custom Config
       run: |
         # 应用你的自定义配置
-        cp ../config/$TARGET.config .config
+        cp ${{ github.workspace }}/config/$TARGET.config .config
         ./scripts/feeds update -a
         ./scripts/feeds install -a
         
