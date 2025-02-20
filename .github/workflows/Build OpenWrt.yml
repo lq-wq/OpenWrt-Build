@@ -1,16 +1,3 @@
-name: OpenWrt Builder
-
-on:
-  repository_dispatch:
-  workflow_dispatch:
-    inputs:
-      ssh:
-        description: 'SSH connection to Actions'
-        required: false
-        default: 'false'
-  #schedule:
-   #- cron: 0 16 * * *
-
 env:
   REPO_URL: https://github.com/openwrt/openwrt
   REPO_BRANCH: openwrt-24.10
@@ -55,7 +42,7 @@ jobs:
         sudo apt-get -qq clean
 
         # 设置时区
-        sudo timedatectl set-timezone "$TZ"
+        sudo timedatectl set-timezone "${{ env.TZ }}"
 
         # 创建工作目录
         sudo mkdir -p /workdir
@@ -68,15 +55,15 @@ jobs:
       working-directory: /workdir
       run: |
         df -hT $PWD
-        git clone $REPO_URL -b $REPO_BRANCH openwrt
+        git clone ${{ env.REPO_URL }} -b ${{ env.REPO_BRANCH }} openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
     - name: Load custom feeds
       run: |
-        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
-        chmod +x $DIY_P1_SH
+        [ -e ${{ env.FEEDS_CONF }} ] && mv ${{ env.FEEDS_CONF }} openwrt/feeds.conf.default
+        chmod +x ${{ env.DIY_P1_SH }}
         cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P1_SH
+        $GITHUB_WORKSPACE/${{ env.DIY_P1_SH }}
 
     - name: Update feeds
       run: cd openwrt && ./scripts/feeds update -a
@@ -87,10 +74,10 @@ jobs:
     - name: Load custom configuration
       run: |
         [ -e files ] && mv files openwrt/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        chmod +x $DIY_P2_SH
+        [ -e ${{ env.CONFIG_FILE }} ] && mv ${{ env.CONFIG_FILE }} openwrt/.config
+        chmod +x ${{ env.DIY_P2_SH }}
         cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P2_SH
+        $GITHUB_WORKSPACE/${{ env.DIY_P2_SH }}
 
     - name: SSH 连接到 Actions
       uses: P3TERX/ssh2actions@v1.0.0
@@ -105,8 +92,7 @@ jobs:
         cd openwrt
         make defconfig
         make download -j8
-        find dl -size -1024c -exec ls -l {} \;
-        find dl -size -1024c -exec rm -f {} \;
+        find dl -size -1024c -delete
 
     - name: Check disk space after downloading packages
       run: df -hT
@@ -138,43 +124,43 @@ jobs:
       run: |
         cd openwrt
         make dirclean
-        find . -name "*.o" -exec rm -f {} \;
-        find . -name "*.ko" -exec rm -f {} \;
-        find . -name "*.so" -exec rm -f {} \;
-        find . -name "*.a" -exec rm -f {} \;
-        find . -name "*.symvers" -exec rm -f {} \;
-        find . -name "*.mod.c" -exec rm -f {} \;
-        find . -name "*.mod.o" -exec rm -f {} \;
-        find . -name "*.cmd" -exec rm -f {} \;
-        find . -name "*.d" -exec rm -f {} \;
-        find . -name "*.tmp" -exec rm -f {} \;
-        find . -name "*.log" -exec rm -f {} \;
-        find . -name "*.gz" -exec rm -f {} \;
-        find . -name "*.bz2" -exec rm -f {} \;
-        find . -name "*.xz" -exec rm -f {} \;
-        find . -name "*.zip" -exec rm -f {} \;
-        find . -name "*.tar" -exec rm -f {} \;
-        find . -name "*.tar.gz" -exec rm -f {} \;
-        find . -name "*.tar.bz2" -exec rm -f {} \;
-        find . -name "*.tar.xz" -exec rm -f {} \;
-        find . -name "*.img" -exec rm -f {} \;
-        find . -name "*.bin" -exec rm -f {} \;
-        find . -name "*.elf" -exec rm -f {} \;
-        find . -name "*.ko.cmd" -exec rm -f {} \;
-        find . -name "*.mod.c.cmd" -exec rm -f {} \;
-        find . -name "*.mod.o.cmd" -exec rm -f {} \;
-        find . -name "*.symvers.cmd" -exec rm -f {} \;
-        find . -name "*.order" -exec rm -f {} \;
-        find . -name "*.built-in.a.cmd" -exec rm -f {} \;
-        find . -name "*.built-in.o.cmd" -exec rm -f {} \;
-        find . -name "*.ko.unsigned" -exec rm -f {} \;
-        find . -name "*.ko.unsigned.cmd" -exec rm -f {} \;
-        find . -name "*.ko.unsigned.o" -exec rm -f {} \;
-        find . -name "*.ko.unsigned.o.cmd" -exec rm -f {} \;
-        find . -name "*.ko.unsigned.mod.c" -exec rm -f {} \;
-        find . -name "*.ko.unsigned.mod.c.cmd" -exec rm -f {} \;
-        find . -name "*.ko.unsigned.mod.o" -exec rm -f {} \;
-        find . -name "*.ko.unsigned.mod.o.cmd" -exec rm -f {} \;
+        find . -type f -name "*.o" -delete
+        find . -type f -name "*.ko" -delete
+        find . -type f -name "*.so" -delete
+        find . -type f -name "*.a" -delete
+        find . -type f -name "*.symvers" -delete
+        find . -type f -name "*.mod.c" -delete
+        find . -type f -name "*.mod.o" -delete
+        find . -type f -name "*.cmd" -delete
+        find . -type f -name "*.d" -delete
+        find . -type f -name "*.tmp" -delete
+        find . -type f -name "*.log" -delete
+        find . -type f -name "*.gz" -delete
+        find . -type f -name "*.bz2" -delete
+        find . -type f -name "*.xz" -delete
+        find . -type f -name "*.zip" -delete
+        find . -type f -name "*.tar" -delete
+        find . -type f -name "*.tar.gz" -delete
+        find . -type f -name "*.tar.bz2" -delete
+        find . -type f -name "*.tar.xz" -delete
+        find . -type f -name "*.img" -delete
+        find . -type f -name "*.bin" -delete
+        find . -type f -name "*.elf" -delete
+        find . -type f -name "*.ko.cmd" -delete
+        find . -type f -name "*.mod.c.cmd" -delete
+        find . -type f -name "*.mod.o.cmd" -delete
+        find . -type f -name "*.symvers.cmd" -delete
+        find . -type f -name "*.order" -delete
+        find . -type f -name "*.built-in.a.cmd" -delete
+        find . -type f -name "*.built-in.o.cmd" -delete
+        find . -type f -name "*.ko.unsigned" -delete
+        find . -type f -name "*.ko.unsigned.cmd" -delete
+        find . -type f -name "*.ko.unsigned.o" -delete
+        find . -type f -name "*.ko.unsigned.o.cmd" -delete
+        find . -type f -name "*.ko.unsigned.mod.c" -delete
+        find . -type f -name "*.ko.unsigned.mod.c.cmd" -delete
+        find . -type f -name "*.ko.unsigned.mod.o" -delete
+        find . -type f -name "*.ko.unsigned.mod.o.cmd" -delete
 
     - name: Check disk space after cleaning up
       run: df -hT
@@ -213,7 +199,7 @@ jobs:
       run: |
         echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
         touch release.txt
-        [ ${UPLOAD_GOFILE} = true && ${{ steps.gofile.outputs.url }} ] && echo "🔗 [GoFile](${{ steps.gofile.outputs.url }})" >> release.txt
+        [ "${{ env.UPLOAD_GOFILE }}" = true && ${{ steps.gofile.outputs.url }} ] && echo "🔗 [GoFile](${{ steps.gofile.outputs.url }})" >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to release
