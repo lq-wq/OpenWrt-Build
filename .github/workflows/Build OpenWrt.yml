@@ -35,6 +35,9 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
+        # 确保 main 源已经添加
+        sudo add-apt-repository main
+        
         # 添加 universe 和 multiverse 源
         sudo add-apt-repository universe
         sudo add-apt-repository multiverse
