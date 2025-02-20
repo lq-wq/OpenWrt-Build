@@ -40,7 +40,8 @@ jobs:
     - name: Apply Custom Config
       run: |
         # 应用你的自定义配置
-        cp ${{ env.CONFIG_PATH }} .config  # 修改为使用 CONFIG_PATH 环境变量
+        cd openwrt
+        cp ${{ env.CONFIG_PATH }} .config
         ./scripts/feeds update -a
         ./scripts/feeds install -a
         
