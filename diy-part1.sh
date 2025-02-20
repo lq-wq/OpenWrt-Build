@@ -24,8 +24,8 @@ git clone https://github.com/sirpdboy/luci-app-poweroffdevice package/luci-app-p
 git clone https://github.com/tty228/luci-app-wechatpush.git package/luci-app-serverchan  # 微信/Telegram 推送的插件
 
 # 添加netdata插件
-rm -rf ./feeds/luci/applications/luci-app-netdata/  
-git clone https://github.com/Jason6111/luci-app-netdata ./feeds/luci/applications/luci-app-netdata/  
+rm -rf ./feeds/luci/applications/luci-app-netdata/
+git clone https://github.com/Jason6111/luci-app-netdata ./feeds/luci/applications/luci-app-netdata/
 
 # Themes主题
 git clone https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
