@@ -7,6 +7,7 @@ env:
   REPO_BRANCH: openwrt-24.10
   TARGET: x86/64   # 根据需求修改
   PROFILE: generic
+  CONFIG_PATH: ${{ github.workspace }}/config/x86_64.config  # 新增配置文件路径
 
 jobs:
   build:
@@ -39,7 +40,7 @@ jobs:
     - name: Apply Custom Config
       run: |
         # 应用你的自定义配置
-        cp ${{ github.workspace }}/config/$TARGET.config .config
+        cp ${{ env.CONFIG_PATH }} .config  # 修改为使用 CONFIG_PATH 环境变量
         ./scripts/feeds update -a
         ./scripts/feeds install -a
         
