@@ -1,245 +1,45 @@
-name: OpenWrt Builder
+name: OpenWrt Build
 
-on:
-  repository_dispatch:
-  workflow_dispatch:
-    inputs:
-      ssh:
-        description: 'SSH connection to Actions'
-        required: false
-        default: 'false'
-  #schedule:
-   #- cron: 0 16 * * *
+on: [push]
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt
   REPO_BRANCH: openwrt-24.10
-  FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: .config
-  DIY_P1_SH: diy-part1.sh
-  DIY_P2_SH: diy-part2.sh
-  UPLOAD_BIN_DIR: false
-  UPLOAD_FIRMWARE: true
-  UPLOAD_RELEASE: true
-  TZ: Asia/Shanghai
+  TARGET: x86/64   # 根据需求修改
+  PROFILE: generic
 
 jobs:
   build:
     runs-on: ubuntu-22.04
-
     steps:
     - name: Checkout
-      uses: actions/checkout@main
-
-    - name: Initialization environment
+      uses: actions/checkout@v4
+      
+    - name: Setup Env
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install build-essential ccache ecj fastjar file g++ gawk \
+        gettext git java-propose-classpath libelf-dev libncurses5-dev libncursesw5-dev \
+        libssl-dev python3 python3-distutils python3-setuptools python3-venv rsync \
+        unzip wget python3-pip zlib1g-dev
+        
+    - name: Clone OpenWrt
+      run: |
+        git clone --depth=1 -b $REPO_BRANCH $REPO_URL openwrt
+        cd openwrt
+        
+    - name: Apply Custom Config
+      run: |
+        # 应用你的自定义配置
+        cp ../config/$TARGET.config .config
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+        
+    - name: Build
       env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        # 添加 universe 和 multiverse 源
-        sudo add-apt-repository universe
-        sudo add-apt-repository multiverse
-
-        # 更新软件源列表
-        sudo apt-get update -qq
-
-        # 清理不必要的文件
-        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-
-        # 安装必要的依赖项
-        sudo apt-get -qq install -y \
-          binutils bzip2 flex gawk grep libc-dev libz-dev make perl python3 rsync unzip \
-          libncurses5-dev libncursesw5-dev uci ppp
-
-        # 清理已安装的包
-        sudo apt-get -qq autoremove --purge
-        sudo apt-get -qq clean
-
-        # 设置时区
-        sudo timedatectl set-timezone "${{ env.TZ }}"
-
-        # 创建工作目录
-        sudo mkdir -p /workdir
-        sudo chown $USER:$GROUPS /workdir
-
-        # 确保自定义脚本具有执行权限
-        chmod +x ${{ env.DIY_P1_SH }}
-        chmod +x ${{ env.DIY_P2_SH }}
-
-    - name: Check disk space before cloning
-      run: df -hT
-
-    - name: Clone source code
-      working-directory: /workdir
-      run: |
-        df -hT $PWD
-        git clone ${{ env.REPO_URL }} -b ${{ env.REPO_BRANCH }} openwrt
-        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
-
-    - name: Load custom feeds
-      run: |
-        [ -e ${{ env.FEEDS_CONF }} ] && mv ${{ env.FEEDS_CONF }} openwrt/feeds.conf.default
-        chmod +x ${{ env.DIY_P1_SH }}
-        cd openwrt
-        $GITHUB_WORKSPACE/${{ env.DIY_P1_SH }}
-
-    - name: Update feeds
-      run: cd openwrt && ./scripts/feeds update -a
-
-    - name: Install feeds
-      run: cd openwrt && ./scripts/feeds install -a
-
-    - name: Load custom configuration
-      run: |
-        [ -e files ] && mv files openwrt/files
-        [ -e ${{ env.CONFIG_FILE }} ] && mv ${{ env.CONFIG_FILE }} openwrt/.config
-        chmod +x ${{ env.DIY_P2_SH }}
-        cd openwrt
-        $GITHUB_WORKSPACE/${{ env.DIY_P2_SH }}
-
-    - name: SSH 连接到 Actions
-      uses: P3TERX/ssh2actions@v1.0.0
-      if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
-      env:
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-
-    - name: Download package
-      id: package
+        CCACHE_DIR: ${{ github.workspace }}/ccache
+        CCACHE_MAXSIZE: 4G
       run: |
         cd openwrt
-        make defconfig
-        make download -j8
-        find dl -size -1024c -delete
-
-    - name: Check disk space after downloading packages
-      run: df -hT
-
-    - name: Compile the firmware
-      id: compile
-      run: |
-        cd openwrt
-        echo -e "$(nproc) thread compile"
-        make defconfig
-        make -j$(nproc) || make -j1 || make -j1 V=s
-        echo "status=success" >> $GITHUB_OUTPUT
-        grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
-        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
-        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
-
-    - name: Check if firmware directory exists
-      run: |
-        if [ ! -d "openwrt/bin/targets/*/*" ]; then
-          echo "Error: Directory openwrt/bin/targets/*/* does not exist."
-          exit 1
-        fi
-
-    - name: Check space usage
-      if: (!cancelled())
-      run: df -hT
-
-    - name: Clean up build artifacts
-      run: |
-        cd openwrt
-        make dirclean
-        find . -type f -name "*.o" -delete
-        find . -type f -name "*.ko" -delete
-        find . -type f -name "*.so" -delete
-        find . -type f -name "*.a" -delete
-        find . -type f -name "*.symvers" -delete
-        find . -type f -name "*.mod.c" -delete
-        find . -type f -name "*.mod.o" -delete
-        find . -type f -name "*.cmd" -delete
-        find . -type f -name "*.d" -delete
-        find . -type f -name "*.tmp" -delete
-        find . -type f -name "*.log" -delete
-        find . -type f -name "*.gz" -delete
-        find . -type f -name "*.bz2" -delete
-        find . -type f -name "*.xz" -delete
-        find . -type f -name "*.zip" -delete
-        find . -type f -name "*.tar" -delete
-        find . -type f -name "*.tar.gz" -delete
-        find . -type f -name "*.tar.bz2" -delete
-        find . -type f -name "*.tar.xz" -delete
-        find . -type f -name "*.img" -delete
-        find . -type f -name "*.bin" -delete
-        find . -type f -name "*.elf" -delete
-        find . -type f -name "*.ko.cmd" -delete
-        find . -type f -name "*.mod.c.cmd" -delete
-        find . -type f -name "*.mod.o.cmd" -delete
-        find . -type f -name "*.symvers.cmd" -delete
-        find . -type f -name "*.order" -delete
-        find . -type f -name "*.built-in.a.cmd" -delete
-        find . -type f -name "*.built-in.o.cmd" -delete
-        find . -type f -name "*.ko.unsigned" -delete
-        find . -type f -name "*.ko.unsigned.cmd" -delete
-        find . -type f -name "*.ko.unsigned.o" -delete
-        find . -type f -name "*.ko.unsigned.o.cmd" -delete
-        find . -type f -name "*.ko.unsigned.mod.c" -delete
-        find . -type f -name "*.ko.unsigned.mod.c.cmd" -delete
-        find . -type f -name "*.ko.unsigned.mod.o" -delete
-        find . -type f -name "*.ko.unsigned.mod.o.cmd" -delete
-
-    - name: Check disk space after cleaning up
-      run: df -hT
-
-    - name: Upload bin directory
-      uses: actions/upload-artifact@main
-      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
-      with:
-        name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: openwrt/bin
-
-    - name: Organize files
-      id: organize
-      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
-      run: |
-        if [ -d "openwrt/bin/targets/*/*" ]; then
-          cd openwrt/bin/targets/*/*
-          rm -rf packages
-          echo "FIRMWARE=$PWD" >> $GITHUB_ENV
-          echo "status=success" >> $GITHUB_OUTPUT
-        else
-          echo "Error: Directory openwrt/bin/targets/*/* does not exist."
-          exit 1
-        fi
-
-    - name: Upload firmware directory
-      uses: actions/upload-artifact@main
-      if: steps.organize.outputs.status == 'success' && !cancelled()
-      with:
-        name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: ${{ env.FIRMWARE }}
-
-    - name: Generate release tag
-      id: tag
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      run: |
-        echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
-        touch release.txt
-        [ "${{ env.UPLOAD_GOFILE }}" = true && ${{ steps.gofile.outputs.url }} ] && echo "🔗 [GoFile](${{ steps.gofile.outputs.url }})" >> release.txt
-        echo "status=success" >> $GITHUB_OUTPUT
-
-    - name: Upload firmware to release
-      uses: softprops/action-gh-release@master
-      if: steps.tag.outputs.status == 'success' && !cancelled()
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.tag.outputs.release_tag }}
-        body_path: release.txt
-        files: ${{ env.FIRMWARE }}/*
-
-    - name: Delete workflow runs
-      uses: Mattraks/delete-workflow-runs@main
-      with:
-        retain_days: 0
-        keep_minimum_runs: 2
-
-    - name: Remove old Releases
-      uses: dev-drprasad/delete-older-releases@master
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      with:
-        keep_latest: 3
-        delete_tags: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        make -j$(nproc) download
+        make -j$(nproc) V=s CCACHE=1
