@@ -1,0 +1,10 @@
+# Fullcone NAT
+iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+iptables -t nat -A POSTROUTING -o eth0 -j FULLCONENAT
+iptables -t nat -A PREROUTING -i eth0 -j FULLCONENAT
+
+# 防御DDoS
+iptables -N SYN_FLOOD
+iptables -A SYN_FLOOD -p tcp --syn -m limit --limit 1/s -j RETURN
+iptables -A SYN_FLOOD -j DROP
+iptables -I INPUT -p tcp --syn -j SYN_FLOOD
