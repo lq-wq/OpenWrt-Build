@@ -12,6 +12,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -19,13 +20,28 @@ jobs:
     - name: Set up OpenWrt build environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential libncurses5-dev gawk git gettext libssl-dev xsltproc unzip zlib1g-dev file wget
+        sudo apt-get install -y build-essential libncurses5-dev gawk git gettext libssl-dev xsltproc unzip zlib1g-dev file wget ccache
+        sudo ln -s /usr/bin/ccache /usr/local/bin/gcc
+        sudo ln -s /usr/bin/ccache /usr/local/bin/g++
+        sudo ln -s /usr/bin/ccache /usr/local/bin/cc
+        sudo ln -s /usr/bin/ccache /usr/local/bin/c++
 
     - name: Clone OpenWrt source
       run: |
         git clone https://github.com/openwrt/openwrt.git
         cd openwrt
         git checkout openwrt-24.10
+
+    - name: Cache OpenWrt build dependencies
+      uses: actions/cache@v2
+      with:
+        path: |
+          openwrt/dl
+          openwrt/build_dir
+          openwrt/staging_dir
+        key: ${{ runner.os }}-openwrt-${{ github.ref }}-${{ hashFiles('**/feeds.conf') }}
+        restore-keys: |
+          ${{ runner.os }}-openwrt-${{ github.ref }}-
 
     - name: Update and install feeds
       run: |
@@ -35,8 +51,8 @@ jobs:
 
     - name: Copy custom config and scripts
       run: |
-        cp build/.config openwrt/.config
-        cp build/diy-part.sh openwrt/diy-part.sh
+        cp ../build/.config openwrt/.config
+        cp ../build/diy-part.sh openwrt/diy-part.sh
 
     - name: Run custom scripts
       run: |
@@ -52,7 +68,7 @@ jobs:
     - name: Build firmware
       run: |
         cd openwrt
-        make -j$(nproc)
+        make -j$(nproc) V=s
 
     - name: Rename firmware file
       run: |
