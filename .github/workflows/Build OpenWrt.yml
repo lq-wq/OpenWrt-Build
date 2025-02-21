@@ -1,115 +1,83 @@
-name: OpenWrt Builder
+name: Build OpenWrt Firmware
 
 on:
-  repository_dispatch:
-  workflow_dispatch:
-    inputs:
-      ssh:
-        description: 'SSH connection to Actions'
-        required: false
-        default: 'false'
-
-env:
-  REPO_URL: https://github.com/openwrt/openwrt
-  REPO_BRANCH: openwrt-24.10
-  TARGET: x86/64   # 根据需求修改
-  PROFILE: generic
-  CONFIG_PATH: ${{ github.workspace }}/config/x86_64.config  # 新增配置文件路径
+  push:
+    branches:
+      - openwrt-24.10
+  pull_request:
+    branches:
+      - openwrt-24.10
+  schedule:
+    - cron: '0 0 * * 0' # 每周清理一次
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      
-    - name: Setup Env
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up OpenWrt build environment
       run: |
         sudo apt-get update
-        sudo add-apt-repository universe  # 添加 universe 仓库
-        sudo apt-get update  # 更新包列表
-        echo "deb https://downloads.openwrt.org/releases/24.10.0/targets/x86/64/packages/ /" | sudo tee /etc/apt/sources.list.d/openwrt.list  # 修改为正确的 openwrt 包仓库路径
-        sudo apt-get update  # 更新包列表
-        sudo apt-get -y install build-essential ccache ecj fastjar file g++ gawk \
-        gettext git java-propose-classpath libelf-dev libncurses5-dev libncursesw5-dev \
-        libssl-dev python3 python3-distutils python3-setuptools python3-venv rsync \
-        unzip wget python3-pip zlib1g-dev libuci-dev uci-core  # 添加 libuci-dev 和 uci-core
-        
-    - name: Cache ccache
-      uses: actions/cache@v3
-      with:
-        path: ${{ github.workspace }}/ccache
-        key: ${{ runner.os }}-ccache-${{ env.TARGET }}
-        restore-keys: |
-          ${{ runner.os }}-ccache-
-        
-    - name: Clone OpenWrt
+        sudo apt-get install -y build-essential libncurses5-dev gawk git gettext libssl-dev xsltproc unzip zlib1g-dev file wget
+
+    - name: Clone OpenWrt source
       run: |
-        git clone --depth=1 -b $REPO_BRANCH $REPO_URL openwrt
+        git clone https://github.com/openwrt/openwrt.git
         cd openwrt
-        
-    - name: Apply Custom Config
+        git checkout openwrt-24.10
+
+    - name: Update and install feeds
       run: |
         cd openwrt
-        cp ${{ env.CONFIG_PATH }} .config
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-        make defconfig  # 同步配置文件
 
-    - name: Run diy-part1.sh
+    - name: Copy custom config and scripts
       run: |
-        cd openwrt
-        if [ -f ../diy-part1.sh ]; then
-          bash ../diy-part1.sh
-        else
-          echo "diy-part1.sh not found!"
-        fi
+        cp build/.config openwrt/.config
+        cp build/diy-part.sh openwrt/diy-part.sh
 
-    - name: Run diy-part2.sh
+    - name: Run custom scripts
       run: |
         cd openwrt
-        if [ -f ../diy-part2.sh ]; then
-          bash ../diy-part2.sh
-        else
-          echo "diy-part2.sh not found!"
-        fi
+        chmod +x diy-part.sh
+        ./diy-part.sh
 
-    - name: Set Custom Management IP, Username, and Password
+    - name: Configure build
       run: |
         cd openwrt
-        # 设置后台管理IP
-        sed -i 's/^#*\(option ipaddr \).*/\1192.168.1.1/' package/base-files/files/bin/config_generate
-        # 设置用户名
-        sed -i 's/^#*\(option username \).*/\1admin/' package/base-files/files/etc/config/user
-        # 设置密码
-        echo "root:your_password" | chpasswd -c SHA512 /dev/stdin > package/base-files/files/etc/shadow
-        
-    - name: Build
-      env:
-        CCACHE_DIR: ${{ github.workspace }}/ccache
-        CCACHE_MAXSIZE: 4G
+        make defconfig
+
+    - name: Build firmware
       run: |
         cd openwrt
-        make -j$(nproc) download
-        make -j$(nproc) V=s CCACHE=1
-        
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
+        make -j$(nproc)
+
+    - name: Rename firmware file
+      run: |
+        DATE=$(date +%Y%m%d)
+        mv openwrt/bin/targets/x86/64/openwrt-*.bin openwrt/bin/targets/x86/64/24.10-x86_64-${DATE}.bin
+
+    - name: Upload firmware to GitHub Releases
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          openwrt/bin/targets/x86/64/24.10-x86_64-*.bin
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }}
-        draft: false
-        prerelease: false
-        
-    - name: Upload Firmware
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./openwrt/bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz
-        asset_name: openwrt-x86-64-generic-squashfs-combined.img.gz
-        asset_content_type: application/octet-stream
+
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Cleanup old actions and releases
+      run: |
+        # 清理超过30天的actions运行空间
+        gh run list --limit 1000 --json databaseId,createdAt,status,conclusion | jq -r '.[] | select(.status=="completed" and .conclusion=="success" and (now - (.createdAt | fromdateiso8601) > 2592000)) | .databaseId' | xargs -I {} gh run delete {}
+
+        # 清理超过30天的releases
+        gh release list --limit 1000 --json name,publishedAt | jq -r '.[] | select((now - (.publishedAt | fromdateiso8601) > 2592000)) | .name' | xargs -I {} gh release delete {}
