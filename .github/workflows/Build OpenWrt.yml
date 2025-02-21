@@ -17,7 +17,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Set up OpenWrt build environment
       run: |
@@ -35,7 +35,7 @@ jobs:
         git checkout openwrt-24.10
 
     - name: Cache OpenWrt build dependencies
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: |
           openwrt/dl
@@ -96,7 +96,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Cleanup old actions and releases
       run: |
