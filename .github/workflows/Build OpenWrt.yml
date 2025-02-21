@@ -73,10 +73,15 @@ jobs:
         cd openwrt
         make -j$(nproc) V=s 2>&1 | tee build.log
 
-    - name: Rename firmware file
+    - name: Check for firmware file and rename
       run: |
         DATE=$(date +%Y%m%d)
-        mv openwrt/bin/targets/x86/64/openwrt-*.bin openwrt/bin/targets/x86/64/24.10-x86_64-${DATE}.bin
+        if ls openwrt/bin/targets/x86/64/openwrt-*.bin 1> /dev/null 2>&1; then
+          mv openwrt/bin/targets/x86/64/openwrt-*.bin openwrt/bin/targets/x86/64/24.10-x86_64-${DATE}.bin
+        else
+          echo "Firmware file not found!"
+          exit 1
+        fi
 
     - name: Upload firmware and logs to GitHub Releases
       uses: softprops/action-gh-release@v1
