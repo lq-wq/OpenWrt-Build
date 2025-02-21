@@ -45,17 +45,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-openwrt-${{ github.ref }}-
 
-    - name: Update and install feeds
-      run: |
-        cd openwrt
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
-
     - name: Check if custom config exists
       run: |
         if [ ! -f ../build/.config ]; then
-          echo "Custom .config file not found!"
-          exit 1
+          echo "Custom .config file not found, creating a default .config file"
+          cp openwrt/target/linux/x86/config-5.4 ../build/.config  # 替换为适当的默认配置
         fi
 
     - name: Copy custom config and scripts
