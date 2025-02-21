@@ -74,6 +74,16 @@ jobs:
           echo "diy-part2.sh not found!"
         fi
 
+    - name: Set Custom Management IP, Username, and Password
+      run: |
+        cd openwrt
+        # 设置后台管理IP
+        sed -i 's/^#*\(option ipaddr \).*/\1192.168.1.1/' package/base-files/files/bin/config_generate
+        # 设置用户名
+        sed -i 's/^#*\(option username \).*/\1admin/' package/base-files/files/etc/config/user
+        # 设置密码
+        echo "root:your_password" | chpasswd -c SHA512 /dev/stdin > package/base-files/files/etc/shadow
+        
     - name: Build
       env:
         CCACHE_DIR: ${{ github.workspace }}/ccache
