@@ -1,4 +1,4 @@
-name: OpenWrt Build
+name: OpenWrt-24.10
 
 on: [push]
 
