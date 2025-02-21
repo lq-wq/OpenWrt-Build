@@ -48,8 +48,8 @@ jobs:
     - name: Check if custom config exists
       run: |
         if [ ! -f ../build/.config ]; then
-          echo "Custom .config file not found, creating a default .config file"
-          cp openwrt/target/linux/x86/config-5.4 ../build/.config  # 替换为适当的默认配置
+          echo "Custom .config file not found, using default.config"
+          cp ../default.config ../build/.config
         fi
 
     - name: Copy custom config and scripts
