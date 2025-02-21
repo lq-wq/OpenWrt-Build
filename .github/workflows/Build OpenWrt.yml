@@ -51,6 +51,13 @@ jobs:
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
+    - name: Check if custom config exists
+      run: |
+        if [ ! -f ../build/.config ]; then
+          echo "Custom .config file not found!"
+          exit 1
+        fi
+
     - name: Copy custom config and scripts
       run: |
         cp ../build/.config openwrt/.config
