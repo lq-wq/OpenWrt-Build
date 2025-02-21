@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # 1. 添加自定义软件源
 cd package
 git clone https://github.com/cdny123/openwrt-package1.git
