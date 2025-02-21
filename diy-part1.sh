@@ -22,6 +22,7 @@ git clone https://github.com/sirpdboy/luci-app-lucky.git package/lucky      # lu
 git clone https://github.com/destan19/OpenAppFilter.git package/OpenAppFilter   # 应用过滤
 git clone https://github.com/sirpdboy/luci-app-poweroffdevice package/luci-app-poweroffdevice   # 关机功能
 git clone https://github.com/tty228/luci-app-wechatpush.git package/luci-app-serverchan  # 微信/Telegram 推送的插件
+git clone https://git.openwrt.org/project/uci.git uci.git    # 添加UCI
 
 # 添加netdata插件
 rm -rf ./feeds/luci/applications/luci-app-netdata/
