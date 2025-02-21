@@ -31,8 +31,7 @@ jobs:
         sudo apt-get -y install build-essential ccache ecj fastjar file g++ gawk \
         gettext git java-propose-classpath libelf-dev libncurses5-dev libncursesw5-dev \
         libssl-dev python3 python3-distutils python3-setuptools python3-venv rsync \
-        unzip wget python3-pip zlib1g-dev  # 从 snap 安装 uci
-        sudo snap install uci  # 新增: 从 snap 安装 uci
+        unzip wget python3-pip zlib1g-dev libuci-dev uci-core  # 添加 libuci-dev 和 uci-core
         
     - name: Cache ccache
       uses: actions/cache@v3
@@ -72,7 +71,7 @@ jobs:
         else
           echo "diy-part2.sh not found!"
         fi
-    
+
     - name: Build
       env:
         CCACHE_DIR: ${{ github.workspace }}/ccache
