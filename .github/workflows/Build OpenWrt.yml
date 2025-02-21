@@ -44,6 +44,24 @@ jobs:
         cp ${{ env.CONFIG_PATH }} .config
         ./scripts/feeds update -a
         ./scripts/feeds install -a
+    
+    - name: Run diy-part1.sh
+      run: |
+        cd openwrt
+        if [ -f ../diy-part1.sh ]; then
+          bash ../diy-part1.sh
+        else
+          echo "diy-part1.sh not found!"
+        fi
+
+    - name: Run diy-part2.sh
+      run: |
+        cd openwrt
+        if [ -f ../diy-part2.sh ]; then
+          bash ../diy-part2.sh
+        else
+          echo "diy-part2.sh not found!"
+        fi
         
     - name: Build
       env:
