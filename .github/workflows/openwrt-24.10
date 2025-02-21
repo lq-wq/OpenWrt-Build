@@ -1,0 +1,94 @@
+name: OpenWrt Build
+
+on: [push]
+
+env:
+  REPO_URL: https://github.com/openwrt/openwrt
+  REPO_BRANCH: openwrt-24.10
+  TARGET: x86/64   # 根据需求修改
+  PROFILE: generic
+  CONFIG_PATH: ${{ github.workspace }}/config/x86_64.config  # 新增配置文件路径
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Env
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install build-essential ccache ecj fastjar file g++ gawk \
+        gettext git java-propose-classpath libelf-dev libncurses5-dev libncursesw5-dev \
+        libssl-dev python3 python3-distutils python3-setuptools python3-venv rsync \
+        unzip wget python3-pip zlib1g-dev
+        
+    - name: Cache ccache
+      uses: actions/cache@v3
+      with:
+        path: ${{ github.workspace }}/ccache
+        key: ${{ runner.os }}-ccache-${{ env.TARGET }}
+        restore-keys: |
+          ${{ runner.os }}-ccache-
+        
+    - name: Clone OpenWrt
+      run: |
+        git clone --depth=1 -b $REPO_BRANCH $REPO_URL openwrt
+        cd openwrt
+        
+    - name: Apply Custom Config
+      run: |
+        # 应用你的自定义配置
+        cd openwrt
+        cp ${{ env.CONFIG_PATH }} .config
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Run diy-part1.sh
+      run: |
+        cd openwrt
+        if [ -f ../diy-part1.sh ]; then
+          bash ../diy-part1.sh
+        else
+          echo "diy-part1.sh not found!"
+        fi
+
+    - name: Run diy-part2.sh
+      run: |
+        cd openwrt
+        if [ -f ../diy-part2.sh ]; then
+          bash ../diy-part2.sh
+        else
+          echo "diy-part2.sh not found!"
+        fi
+        
+    - name: Build
+      env:
+        CCACHE_DIR: ${{ github.workspace }}/ccache
+        CCACHE_MAXSIZE: 4G
+      run: |
+        cd openwrt
+        make -j$(nproc) download
+        make -j$(nproc) V=s CCACHE=1
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+        
+    - name: Upload Firmware
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./openwrt/bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz
+        asset_name: openwrt-x86-64-generic-squashfs-combined.img.gz
+        asset_content_type: application/octet-stream
