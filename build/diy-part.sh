@@ -41,3 +41,22 @@ sed -i 's/OpenWrt/op-NIT/' ../../package/base-files/files/bin/config_generate
 
 # 9. 设置免密码登录
 sed -i '/root/c\root::0:0:99999:7:::' ../../package/base-files/files/etc/shadow
+
+# 10. 系统和网络优化
+# 调整网络连接数
+echo 'net.core.somaxconn = 1024' >> ../../package/base-files/files/etc/sysctl.conf
+echo 'net.core.netdev_max_backlog = 2048' >> ../../package/base-files/files/etc/sysctl.conf
+echo 'net.ipv4.tcp_max_syn_backlog = 2048' >> ../../package/base-files/files/etc/sysctl.conf
+echo 'net.ipv4.tcp_fin_timeout = 30' >> ../../package/base-files/files/etc/sysctl.conf
+echo 'net.ipv4.tcp_tw_reuse = 1' >> ../../package/base-files/files/etc/sysctl.conf
+
+# 启用BBR拥塞控制算法
+echo 'net.core.default_qdisc = fq' >> ../../package/base-files/files/etc/sysctl.conf
+echo 'net.ipv4.tcp_congestion_control = bbr' >> ../../package/base-files/files/etc/sysctl.conf
+
+# 调整文件描述符限制
+echo '* soft nofile 51200' >> ../../package/base-files/files/etc/security/limits.conf
+echo '* hard nofile 51200' >> ../../package/base-files/files/etc/security/limits.conf
+
+# 启用快速开放文件描述符选项
+echo 'fs.file-max = 100000' >> ../../package/base-files/files/etc/sysctl.conf
