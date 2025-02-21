@@ -71,18 +71,19 @@ jobs:
     - name: Build firmware
       run: |
         cd openwrt
-        make -j$(nproc) V=s
+        make -j$(nproc) V=s 2>&1 | tee build.log
 
     - name: Rename firmware file
       run: |
         DATE=$(date +%Y%m%d)
         mv openwrt/bin/targets/x86/64/openwrt-*.bin openwrt/bin/targets/x86/64/24.10-x86_64-${DATE}.bin
 
-    - name: Upload firmware to GitHub Releases
+    - name: Upload firmware and logs to GitHub Releases
       uses: softprops/action-gh-release@v1
       with:
         files: |
           openwrt/bin/targets/x86/64/24.10-x86_64-*.bin
+          build.log
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -92,6 +93,7 @@ jobs:
         rm -rf build_dir
         rm -rf staging_dir
         rm -rf tmp
+        rm -f ../build.log
 
   cleanup:
     runs-on: ubuntu-latest
