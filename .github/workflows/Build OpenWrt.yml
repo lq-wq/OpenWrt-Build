@@ -45,17 +45,17 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-openwrt-${{ github.ref }}-
 
-    - name: Check if custom config exists
+    - name: Validate custom config
       run: |
-        if [ ! -f ../build/.config ]; then
-          echo "Custom .config file not found, using default.config"
-          cp ../default.config ../build/.config
+        if [ ! -f build/.config ]; then
+          echo "Custom .config file not found!"
+          exit 1
         fi
 
     - name: Copy custom config and scripts
       run: |
-        cp ../build/.config openwrt/.config
-        cp ../build/diy-part.sh openwrt/diy-part.sh
+        cp build/.config openwrt/.config
+        cp build/diy-part.sh openwrt/diy-part.sh
 
     - name: Run custom scripts
       run: |
