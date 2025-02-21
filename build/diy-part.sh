@@ -5,6 +5,7 @@ git clone https://github.com/cdny123/openwrt-package1.git
 
 # 2. 添加自定义软件包
 git clone https://github.com/sirpdboy/luci-app-lucky.git
+git clone https://github.com/lq-wq/luci-app-autoupdate.git
 
 # 添加自定义主题
 git clone https://github.com/sirpdboy/luci-theme-kucat.git
