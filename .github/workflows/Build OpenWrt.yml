@@ -26,6 +26,8 @@ jobs:
     - name: Setup Env
       run: |
         sudo apt-get update
+        sudo add-apt-repository universe  # 添加 universe 仓库
+        sudo apt-get update  # 更新包列表
         sudo apt-get -y install build-essential ccache ecj fastjar file g++ gawk \
         gettext git java-propose-classpath libelf-dev libncurses5-dev libncursesw5-dev \
         libssl-dev python3 python3-distutils python3-setuptools python3-venv rsync \
@@ -69,7 +71,17 @@ jobs:
         else
           echo "diy-part2.sh not found!"
         fi
-          
+
+    - name: Set Custom Management IP, Username, and Password
+      run: |
+        cd openwrt
+        # 设置后台管理IP
+        sed -i 's/^#*\(option ipaddr \).*/\1192.168.1.1/' package/base-files/files/bin/config_generate
+        # 设置用户名
+        sed -i 's/^#*\(option username \).*/\1admin/' package/base-files/files/etc/config/user
+        # 设置密码
+        echo "root:your_password" | chpasswd -c SHA512 /dev/stdin > package/base-files/files/etc/shadow
+        
     - name: Build
       env:
         CCACHE_DIR: ${{ github.workspace }}/ccache
