@@ -76,8 +76,8 @@ jobs:
     - name: Check for firmware file and rename
       run: |
         DATE=$(date +%Y%m%d)
-        if ls openwrt/bin/targets/x86/64/openwrt-*.bin 1> /dev/null 2>&1; then
-          mv openwrt/bin/targets/x86/64/openwrt-*.bin openwrt/bin/targets/x86/64/24.10-x86_64-${DATE}.bin
+        if ls openwrt/bin/targets/x86/64/openwrt-*.img.gz 1> /dev/null 2>&1; then
+          mv openwrt/bin/targets/x86/64/openwrt-*.img.gz openwrt/bin/targets/x86/64/24.10-x86_64-${DATE}.img.gz
         else
           echo "Firmware file not found!"
           exit 1
@@ -87,7 +87,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          openwrt/bin/targets/x86/64/24.10-x86_64-*.bin
+          openwrt/bin/targets/x86/64/24.10-x86_64-*.img.gz
           build.log
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
